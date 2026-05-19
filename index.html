@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aile Ağacı Oluşturucu</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:linear-gradient(135deg,#1a1f3a,#0d0d1a);color:#e6e9f2;font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+
+/* ===== HEADER ===== */
+header{background:rgba(0,0,0,.5);border-bottom:1px solid rgba(255,255,255,.1);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;z-index:100;backdrop-filter:blur(10px)}
+.brand{font-size:15px;font-weight:700;background:linear-gradient(90deg,#5fa8f5,#66d68c,#b577da);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.search-wrap{position:relative;flex:1;max-width:340px;margin:0 8px}
+.search-wrap input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#fff;padding:7px 12px 7px 32px;border-radius:8px;font-size:13px;font-family:inherit}
+.search-wrap input:focus{outline:none;border-color:#5fa8f5;background:rgba(95,168,245,.08)}
+.search-wrap::before{content:"🔍";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.6;pointer-events:none}
+.search-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1d2444;border:1px solid rgba(255,255,255,.2);border-radius:8px;max-height:320px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.6);z-index:200;display:none}
+.search-results.open{display:block}
+.search-result{padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)}
+.search-result:hover,.search-result.active{background:rgba(95,168,245,.18)}
+.search-result .mini-avatar{width:30px;height:30px;flex-shrink:0}
+
+.toolbar{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.btn{padding:6px 11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#e6e9f2;border-radius:7px;font-size:12px;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.primary{background:linear-gradient(135deg,#4a7fc7,#3a64a0);border-color:#5fa8f5;color:#fff}
+.btn.primary:hover{background:linear-gradient(135deg,#5a91d9,#4a7fc7)}
+.btn.danger{background:rgba(231,76,60,.18);border-color:rgba(231,76,60,.5);color:#f5b7b1}
+.btn.danger:hover{background:rgba(231,76,60,.35)}
+.btn.icon{padding:6px 9px;font-size:14px}
+.btn.small{padding:3px 7px;font-size:11px}
+
+.toolbar select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#e6e9f2;padding:6px 10px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer}
+
+/* ===== MAIN AREA ===== */
+.main{flex:1;display:flex;overflow:hidden;min-height:0;position:relative}
+
+/* Canvas + overlays kapsayıcı: scroll yapmaz, böylece overlay'lar sabit kalır */
+.canvas-area{flex:1;position:relative;display:flex;min-width:0;min-height:0}
+
+.canvas-wrap{flex:1;position:relative;overflow:auto;background:radial-gradient(ellipse at top,rgba(95,168,245,.04),transparent 70%),linear-gradient(180deg,#131730,#0a0c1a);cursor:grab}
+.canvas-wrap.panning{cursor:grabbing}
+.canvas{position:relative;transform-origin:0 0;min-width:1400px;min-height:900px}
+
+svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+
+/* ===== PERSON CARD ===== */
+.person{position:absolute;width:110px;text-align:center;z-index:3;cursor:grab;user-select:none;transition:filter .18s}
+.person.dragging{z-index:100;cursor:grabbing;transition:none;opacity:.75}
+.person.drag-over .avatar{box-shadow:0 0 0 4px #66d68c,0 0 20px rgba(102,214,155,.6)}
+/* Drag-to-connect: hedef kişi pembe halka + nabız animasyonu */
+.person.drop-target .avatar{box-shadow:0 0 0 5px #ff97c4,0 0 30px rgba(255,151,196,.8)!important;border-color:#ff97c4!important;animation:dropPulse .8s ease-in-out infinite}
+@keyframes dropPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.person.drop-target::before{content:"🔗 Bağla";position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#ff97c4;color:#fff;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:700;white-space:nowrap;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.person.selected .avatar{border-color:#ffe066!important;box-shadow:0 0 26px rgba(255,224,102,.65),0 6px 18px rgba(0,0,0,.55)!important}
+.person.has-warning::after{content:"⚠";position:absolute;top:-4px;left:-4px;background:#ffae64;color:#000;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;z-index:5;border:2px solid #fff}
+
+.avatar{width:80px;height:80px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.7);border:3px solid rgba(255,255,255,.9);box-shadow:0 6px 18px rgba(0,0,0,.55);position:relative;overflow:hidden;background-size:cover;background-position:center}
+.avatar.demir{background:linear-gradient(135deg,#6db4f9,#244e9c)}
+.avatar.kaya{background:linear-gradient(135deg,#74e09b,#1b7244)}
+.avatar.sahin{background:linear-gradient(135deg,#ffae64,#b14a18)}
+.avatar.ozturk{background:linear-gradient(135deg,#c084e2,#54316b)}
+.avatar.outsider{background:linear-gradient(135deg,#c0c8d3,#545d6b)}
+.avatar.pink{background:linear-gradient(135deg,#ff97c4,#b34c7d)}
+.avatar.cyan{background:linear-gradient(135deg,#5fd6ff,#2f7193)}
+.avatar.yellow{background:linear-gradient(135deg,#ffe066,#b08a0e)}
+.avatar.red{background:linear-gradient(135deg,#ff6b6b,#8b1f1f)}
+.avatar.male{border-color:#b3d4ff}
+.avatar.female{border-color:#ffc4c4}
+.avatar.nb{border-color:#ffe066;border-style:dashed}
+.avatar.other{border-color:#c0c8d3}
+.avatar.with-photo{background-color:#222}
+
+.dead-badge{position:absolute;top:-6px;right:-6px;width:22px;height:22px;background:#4b4b4b;border:2px solid rgba(255,255,255,.7);border-radius:50%;color:#f0c0c0;font-size:12px;display:flex;align-items:center;justify-content:center}
+.name{font-size:12px;font-weight:700;margin-top:8px;color:#f0f3fa;text-shadow:0 2px 6px rgba(0,0,0,.8);line-height:1.2;word-wrap:break-word}
+.dates{font-size:10px;color:#98a0b6;margin-top:2px}
+
+/* Quick add buttons on hover */
+.quick-actions{position:absolute;top:0;left:50%;transform:translateX(-50%);width:140px;height:90px;pointer-events:none;opacity:0;transition:opacity .18s}
+.person:hover .quick-actions{opacity:1}
+.quick-btn{pointer-events:auto;position:absolute;width:24px;height:24px;border-radius:50%;background:#5fa8f5;color:#fff;border:2px solid #fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.5);font-family:inherit;line-height:1;padding:0}
+.quick-btn:hover{background:#74b8ff;transform:scale(1.15)}
+.quick-btn.parent{top:-12px;left:50%;margin-left:-12px;background:#b577da}
+.quick-btn.spouse{top:28px;right:-12px;background:#ff97c4}
+.quick-btn.child{bottom:-2px;left:50%;margin-left:-12px;background:#66d68c}
+
+.union-marker{position:absolute;background:rgba(15,18,32,.92);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:2px 7px;font-size:13px;z-index:2;transform:translate(-50%,-50%);pointer-events:none;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.union-marker.partner{border-color:#5fd6ff;color:#5fd6ff}
+.union-marker.samesex{border-color:#f4d03f;color:#f4d03f}
+.union-marker.custom{border-color:#b577da;color:#b577da}
+
+/* Focus mode */
+.canvas-wrap.focusing .person:not(.related){opacity:.18}
+.canvas-wrap.focusing .union-marker:not(.related){opacity:.18}
+.canvas-wrap.focusing svg.lines path:not(.related-line),.canvas-wrap.focusing svg.lines text:not(.related-line){opacity:.12}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:340px;background:rgba(15,18,32,.85);border-left:1px solid rgba(255,255,255,.1);overflow-y:auto;flex-shrink:0;backdrop-filter:blur(6px);transition:width .25s,margin-right .25s}
+.sidebar.collapsed{width:0;margin-right:0;overflow:hidden;padding:0;border-left:0}
+.sidebar-inner{padding:16px}
+.sidebar h3{margin:0 0 8px 0;font-size:11px;color:#8a91a6;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
+.sidebar-section{margin-bottom:18px}
+
+.sidebar-toggle{position:absolute;top:12px;right:0;background:rgba(15,18,32,.95);border:1px solid rgba(255,255,255,.15);border-right:none;border-radius:8px 0 0 8px;color:#fff;width:24px;height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;font-size:14px}
+.sidebar.collapsed + .sidebar-toggle{right:0}
+
+.empty-state-side{color:#888;font-size:13px;text-align:center;margin:40px 0;line-height:1.6}
+.empty-state-side h3{color:#aaa;font-size:14px;margin-bottom:12px;text-transform:none;letter-spacing:0}
+.empty-state-side .tip{font-size:11.5px;color:#888;margin-top:24px;padding:10px;background:rgba(255,255,255,.04);border-radius:6px;border:1px dashed rgba(255,255,255,.1);text-align:left}
+
+.person-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:14px;text-align:center}
+.person-card .avatar{width:84px;height:84px;font-size:28px;margin-bottom:10px}
+.person-card .name{margin-top:0;font-size:16px;text-align:center}
+.person-card .name.editable:hover{outline:1px dashed rgba(255,255,255,.3);border-radius:4px;cursor:text;padding:2px 6px}
+.person-card .dates{text-align:center}
+.field-row{display:flex;justify-content:space-between;font-size:11.5px;color:#bbb;margin-top:6px;padding:4px 0;border-top:1px dashed rgba(255,255,255,.08)}
+.field-row .field-label{color:#888;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px}
+.field-row .field-value{text-align:right;flex:1;margin-left:10px}
+.person-card .desc{color:#bbb;font-size:12px;margin-top:8px;line-height:1.5;text-align:left;white-space:pre-wrap;padding:8px;background:rgba(0,0,0,.2);border-radius:6px}
+.warning-box{margin-top:10px;padding:8px;background:rgba(255,174,100,.12);border:1px solid rgba(255,174,100,.4);border-radius:6px;font-size:11px;color:#ffd2a8;text-align:left}
+
+.actions{display:flex;gap:6px;margin-top:12px}
+.actions .btn{flex:1}
+
+.rel-list{display:flex;flex-direction:column;gap:4px}
+.rel-item{background:rgba(255,255,255,.04);padding:6px 8px;border-radius:7px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.06)}
+.mini-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,.8);background-size:cover;background-position:center}
+.rel-info{flex:1;min-width:0}
+.rel-info .rel-name{font-size:13px;font-weight:600;cursor:pointer;color:#e6e9f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rel-info .rel-name:hover{color:#5fa8f5}
+.rel-info .rel-type{font-size:10.5px;color:#8a91a6;font-style:italic}
+.rel-add-btn{width:100%;margin-top:8px;padding:6px;font-size:12px}
+
+/* ===== ZOOM CONTROLS ===== */
+.zoom-controls{position:absolute;bottom:20px;left:20px;display:flex;flex-direction:column;gap:4px;z-index:50;background:rgba(15,18,32,.85);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:6px;backdrop-filter:blur(8px)}
+.zoom-controls .btn{padding:6px 10px;font-size:14px;min-width:38px}
+.zoom-level{font-size:11px;color:#aab1c6;text-align:center;padding:3px 0}
+
+/* ===== MINIMAP ===== */
+.minimap{position:absolute;top:14px;right:14px;width:180px;height:120px;background:rgba(15,18,32,.92);border:1px solid rgba(255,255,255,.2);border-radius:8px;overflow:hidden;z-index:50;backdrop-filter:blur(8px);cursor:pointer}
+.minimap canvas{display:block;width:100%;height:100%}
+.minimap-viewport{position:absolute;border:1.5px solid #5fa8f5;background:rgba(95,168,245,.15);pointer-events:none}
+
+/* ===== STATUS BAR ===== */
+.status-bar{padding:6px 16px;font-size:11px;color:#8a91a6;background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center}
+.status-bar .save-indicator{color:#66d68c}
+.status-bar .save-indicator.saving{color:#ffae64}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,8,16,.75);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:linear-gradient(180deg,#1d2444,#161b35);border:1px solid rgba(255,255,255,.18);border-radius:14px;width:520px;max-width:92vw;max-height:90vh;overflow-y:auto;padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.8)}
+.modal.wide{width:680px}
+.modal h2{margin:0 0 16px 0;font-size:18px;color:#fff;display:flex;align-items:center;gap:10px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;color:#aab1c6;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#fff;padding:9px 11px;border-radius:7px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#5fa8f5;background:rgba(95,168,245,.06)}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-row{display:flex;gap:10px}
+.form-row .form-group{flex:1}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.help-text{font-size:11px;color:#8a91a6;margin-top:4px;line-height:1.4}
+
+/* Photo uploader */
+.photo-uploader{display:flex;gap:14px;align-items:center}
+.photo-preview{width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,.05);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;background-size:cover;background-position:center;font-size:28px;color:#666;flex-shrink:0;cursor:pointer;position:relative;overflow:hidden}
+.photo-preview.has-photo{border-style:solid;border-color:rgba(95,168,245,.5);color:transparent}
+.photo-preview:hover::after{content:"📷 Değiştir";position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+.photo-actions{display:flex;flex-direction:column;gap:6px;flex:1}
+
+/* Empty state */
+.empty-state{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#888;pointer-events:none}
+.empty-state h2{font-size:28px;background:linear-gradient(90deg,#5fa8f5,#66d68c,#b577da);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.empty-state .icon{font-size:64px;margin-bottom:12px}
+
+/* Welcome */
+.welcome-features{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+.feature-card{padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px}
+.feature-card .icon{font-size:24px;margin-bottom:6px}
+.feature-card h4{margin:0 0 4px 0;font-size:13px;color:#fff}
+.feature-card p{margin:0;font-size:11.5px;color:#bbb;line-height:1.4}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.stat-card{padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;text-align:center}
+.stat-card .num{font-size:28px;font-weight:700;background:linear-gradient(135deg,#5fa8f5,#66d68c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .label{font-size:11px;color:#aab1c6;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Shortcuts */
+.shortcuts-list{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.shortcut{display:flex;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:6px;font-size:12px}
+.shortcut kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:11px;color:#fff}
+
+/* Connect modal — drag-to-connect ile açılır */
+.connect-preview{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px;padding:14px;background:rgba(255,255,255,.04);border-radius:10px}
+.connect-preview .person-mini{text-align:center}
+.connect-preview .arrow{font-size:28px;color:#ff97c4}
+.connect-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.conn-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:14px 10px;cursor:pointer;font-family:inherit;color:inherit;text-align:center;transition:all .15s;line-height:1.4}
+.conn-btn:hover{background:rgba(95,168,245,.18);border-color:#5fa8f5;transform:translateY(-2px)}
+.conn-icon{font-size:22px;display:block;margin-bottom:4px}
+.conn-btn b{font-size:12px;display:block}
+.conn-sub{font-size:10px;color:#8a91a6;margin-top:3px}
+
+/* Sağ-tık bağlam menüsü */
+.context-menu{position:fixed;background:#1d2444;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:4px;display:none;flex-direction:column;min-width:210px;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+.context-menu.open{display:flex}
+.context-menu button{background:transparent;border:none;color:#e6e9f2;padding:8px 12px;text-align:left;font-family:inherit;font-size:12.5px;cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px}
+.context-menu button:hover{background:rgba(95,168,245,.15)}
+.context-menu button.danger{color:#f5b7b1}
+.context-menu button.danger:hover{background:rgba(231,76,60,.2)}
+.menu-divider{height:1px;background:rgba(255,255,255,.1);margin:3px 6px}
+
+/* Shift kilit göstergesi */
+.shift-hint{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#ffe066;color:#000;padding:6px 14px;border-radius:20px;font-size:11.5px;font-weight:700;display:none;z-index:200;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.shift-hint.show{display:block}
+
+/* Responsive */
+@media (max-width:768px){
+  .toolbar{gap:3px}
+  .btn{padding:5px 8px;font-size:11px}
+  .brand{font-size:13px}
+  .search-wrap{max-width:140px}
+  .sidebar{width:280px}
+  .minimap{display:none}
+}
+
+@media print{
+  header,.sidebar,.sidebar-toggle,.zoom-controls,.minimap,.status-bar,.modal-overlay{display:none!important}
+  .canvas-wrap{overflow:visible}
+  body{background:#fff}
+}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="brand">🌳 Aile Ağacı</span>
+    <div class="search-wrap">
+      <input id="searchInput" placeholder="İsme göre ara...">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn icon" id="undoBtn" title="Geri al (Ctrl+Z)" disabled>↶</button>
+      <button class="btn icon" id="redoBtn" title="Yeniden yap (Ctrl+Y)" disabled>↷</button>
+      <button class="btn primary" id="addPersonBtn" title="Yeni kişi (Ctrl+N)">+ Kişi</button>
+      <select id="layoutSelect" title="Düzen tipi">
+        <option value="top-down">↓ Yukarıdan</option>
+        <option value="left-right">→ Soldan sağa</option>
+      </select>
+      <button class="btn" id="rearrangeBtn" title="Otomatik düzenle">⊞ Düzenle</button>
+      <button class="btn" id="exportPngBtn" title="PNG olarak indir">🖼 PNG</button>
+      <button class="btn" id="exportJsonBtn" title="JSON yedeği">⬇ JSON</button>
+      <button class="btn" id="importBtn" title="JSON yükle">⬆ Yükle</button>
+      <button class="btn icon" id="statsBtn" title="İstatistikler">📊</button>
+      <button class="btn icon" id="helpBtn" title="Yardım (?)">❓</button>
+      <button class="btn icon" id="loadSampleBtn" title="Örnek aile">📋</button>
+      <button class="btn icon danger" id="clearBtn" title="Sıfırla">🗑</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="canvas-area">
+      <div class="canvas-wrap" id="canvasWrap">
+        <div class="canvas" id="canvas">
+          <svg class="lines" id="lines"></svg>
+        </div>
+        <div class="empty-state" id="emptyState">
+          <div class="icon">🌱</div>
+          <h2>Aile ağacın boş</h2>
+          <p>Yukarıdaki <b style="color:#5fa8f5">+ Kişi</b> ile başla,<br>ya da <b style="color:#66d68c">📋</b> örnek bir aile aç.</p>
+        </div>
+      </div>
+      <!-- Overlay'lar: .canvas-area'ya göre konumlanır, .canvas-wrap scroll yapsa da yerlerinde kalırlar -->
+      <div class="zoom-controls">
+        <button class="btn icon" id="zoomInBtn" title="Yakınlaştır (+)">+</button>
+        <div class="zoom-level" id="zoomLevel">100%</div>
+        <button class="btn icon" id="zoomOutBtn" title="Uzaklaştır (-)">−</button>
+        <button class="btn icon" id="zoomFitBtn" title="Sığdır (0)">⊡</button>
+      </div>
+      <div class="minimap" id="minimap" title="Tıkla: o bölgeye git">
+        <canvas id="minimapCanvas" width="180" height="120"></canvas>
+        <div class="minimap-viewport" id="minimapViewport"></div>
+      </div>
+    </div>
+    <button class="sidebar-toggle" id="sidebarToggle" title="Paneli aç/kapa">‹</button>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="empty-state-side" id="sidebarEmpty">
+          <h3>👈 Bir kişi seç</h3>
+          <p>Canvas'tan birine tıkla ya da yenisini ekle.</p>
+          <div class="tip">
+            <b>İpuçları:</b><br>
+            • Kişileri <b>sürükleyerek</b> taşı<br>
+            • Üzerine geldiğinde çıkan <b style="color:#b577da">+</b> butonları ile hızlı ilişki ekle<br>
+            • Bir kişi üzerine gelince akrabaları parlar<br>
+            • <b>Çift tıkla</b>: ismi yerinde düzenle<br>
+            • <b>Fotoğraf:</b> kişi düzenle ya da kart üzerine resim sürükle<br>
+            • <b>Ctrl+Z</b> geri al, <b>Ctrl+F</b> ara, <b>?</b> tüm kısayollar
+          </div>
+        </div>
+        <div id="sidebarContent" style="display:none"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="status-bar">
+    <span id="statusInfo">0 kişi · 0 ilişki</span>
+    <span class="save-indicator" id="saveIndicator">✓ Otomatik kaydedildi</span>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-overlay" id="personModal">
+  <div class="modal">
+    <h2 id="personModalTitle">Yeni Kişi</h2>
+    <form id="personForm">
+      <div class="form-group">
+        <label>Fotoğraf</label>
+        <div class="photo-uploader">
+          <div class="photo-preview" id="photoPreview"><span>📷</span></div>
+          <div class="photo-actions">
+            <input type="file" id="photoInput" accept="image/*" style="display:none">
+            <button type="button" class="btn" id="uploadPhotoBtn">📤 Fotoğraf Seç</button>
+            <button type="button" class="btn danger small" id="removePhotoBtn" style="display:none">Kaldır</button>
+            <div class="help-text">Otomatik olarak 250×250'e küçültülür</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label>İsim *</label><input type="text" name="name" required placeholder="Ad Soyad"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Cinsiyet</label>
+          <select name="gender">
+            <option value="male">Erkek</option><option value="female">Kadın</option>
+            <option value="nb">Non-binary</option><option value="other">Belirtilmemiş</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Renk</label>
+          <select name="fam">
+            <option value="demir">🔵 Mavi</option><option value="kaya">🟢 Yeşil</option>
+            <option value="sahin">🟠 Turuncu</option><option value="ozturk">🟣 Mor</option>
+            <option value="pink">🌸 Pembe</option><option value="cyan">💎 Açık mavi</option>
+            <option value="yellow">🟡 Sarı</option><option value="red">🔴 Kırmızı</option>
+            <option value="outsider">⚪ Gri</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Doğum yılı</label><input type="number" name="dob" placeholder="1950"></div>
+        <div class="form-group"><label>Ölüm yılı</label><input type="number" name="dod" placeholder="boş = hayatta"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Doğum yeri</label><input type="text" name="birthPlace" placeholder="İstanbul, Türkiye"></div>
+        <div class="form-group"><label>Ölüm yeri</label><input type="text" name="deathPlace" placeholder=""></div>
+      </div>
+      <div class="form-group"><label>Meslek</label><input type="text" name="occupation" placeholder="Mühendis, doktor..."></div>
+      <div class="form-group"><label>Açıklama / Notlar</label><textarea name="desc" rows="3" placeholder="Hobiler, hikâyeler, ilginç notlar..."></textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="personCancelBtn">İptal</button>
+        <button type="submit" class="btn primary">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="unionModal">
+  <div class="modal">
+    <h2>💞 Eş / Partner Ekle</h2>
+    <form id="unionForm">
+      <div class="form-group"><label>Kim ile?</label><select name="partner" id="unionPartnerSelect"></select></div>
+      <div class="form-group"><label>İlişki türü</label>
+        <select name="type" id="unionTypeSelect">
+          <option value="married">💍 Evli</option><option value="divorced">💔 Boşanmış</option>
+          <option value="partner">◇ Nikâhsız partner</option><option value="samesex">⚭ Eşcinsel partner</option>
+          <option value="custom">✦ Özel etiket...</option>
+        </select>
+      </div>
+      <div class="form-group" id="unionCustomLabelGroup" style="display:none">
+        <label>Özel etiket metni</label>
+        <input type="text" name="customLabel" placeholder="Sözlü, Birlikte yaşıyor, vs.">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="unionCancelBtn">İptal</button>
+        <button type="submit" class="btn primary">Ekle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="childModal">
+  <div class="modal">
+    <h2>👶 Çocuk Ekle</h2>
+    <form id="childForm">
+      <div class="form-group"><label>Diğer ebeveyn (varsa)</label>
+        <select name="otherParent" id="childOtherParentSelect"></select>
+        <div class="help-text">Tek ebeveynse "Yok" bırak</div>
+      </div>
+      <div class="form-group"><label>Çocuk</label><select name="child" id="childChildSelect"></select></div>
+      <div class="form-group"><label>İlişki türü</label>
+        <select name="type" id="childTypeSelect">
+          <option value="bio">Biyolojik</option><option value="adopted">+ Evlat edinme</option>
+          <option value="surrogate">⚕ Taşıyıcı annelik</option><option value="custom">✦ Özel etiket...</option>
+        </select>
+      </div>
+      <div class="form-group" id="childCustomLabelGroup" style="display:none">
+        <label>Özel etiket metni</label>
+        <input type="text" name="customLabel" placeholder="Üvey, Manevi evlat, Vasi olunan...">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="childCancelBtn">İptal</button>
+        <button type="submit" class="btn primary">Ekle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="parentModal">
+  <div class="modal">
+    <h2>👨‍👩 Ebeveyn Ekle</h2>
+    <form id="parentForm">
+      <div class="form-group"><label>1. Ebeveyn</label><select name="parent1" id="parent1Select"></select></div>
+      <div class="form-group"><label>2. Ebeveyn (isteğe bağlı)</label><select name="parent2" id="parent2Select"></select></div>
+      <div class="form-group"><label>İlişki türü</label>
+        <select name="type" id="parentTypeSelect">
+          <option value="bio">Biyolojik</option><option value="adopted">+ Evlat edinme</option>
+          <option value="surrogate">⚕ Taşıyıcı annelik</option><option value="custom">✦ Özel etiket...</option>
+        </select>
+      </div>
+      <div class="form-group" id="parentCustomLabelGroup" style="display:none">
+        <label>Özel etiket metni</label><input type="text" name="customLabel">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="parentCancelBtn">İptal</button>
+        <button type="submit" class="btn primary">Ekle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="welcomeModal">
+  <div class="modal wide">
+    <h2 style="font-size:22px">🌳 Aile Ağacı Oluşturucu'ya Hoş Geldin</h2>
+    <p style="color:#bbb;font-size:13px;margin:0 0 8px">Tarayıcında çalışan, hiçbir kayıt gerektirmeyen tam bir aile ağacı editörü. Her şey bilgisayarında saklanır.</p>
+    <div class="welcome-features">
+      <div class="feature-card"><div class="icon">📸</div><h4>Fotoğraf Ekle</h4><p>Her kişiye fotoğraf yükle — sürükle bırak da olur</p></div>
+      <div class="feature-card"><div class="icon">💞</div><h4>Esnek İlişkiler</h4><p>Evli, boşanmış, partner ya da kendi özel etiketin</p></div>
+      <div class="feature-card"><div class="icon">🖼</div><h4>PNG İndir</h4><p>Tüm ağacın fotoğrafını oluştur ve paylaş</p></div>
+      <div class="feature-card"><div class="icon">🔍</div><h4>Hızlı Ara</h4><p>Kalabalık ağaçta isimle anında bul</p></div>
+      <div class="feature-card"><div class="icon">↶</div><h4>Geri Al</h4><p>Ctrl+Z ile yanlışlığa son. 50 adıma kadar</p></div>
+      <div class="feature-card"><div class="icon">💾</div><h4>Otomatik Kayıt</h4><p>Her değişiklik anında tarayıcına kaydedilir</p></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="welcomeSampleBtn">📋 Örnek Aileyi Aç</button>
+      <button class="btn primary" id="welcomeStartBtn">Sıfırdan Başla →</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="statsModal">
+  <div class="modal">
+    <h2>📊 İstatistikler</h2>
+    <div id="statsContent"></div>
+    <div class="modal-actions"><button class="btn primary" id="statsCloseBtn">Kapat</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="helpModal">
+  <div class="modal wide">
+    <h2>❓ Yardım & Kısayollar</h2>
+    <h3 style="color:#aab1c6;font-size:12px;margin:10px 0 6px">Klavye Kısayolları</h3>
+    <div class="shortcuts-list">
+      <div class="shortcut"><span>Yeni kişi</span><kbd>Ctrl + N</kbd></div>
+      <div class="shortcut"><span>Ara</span><kbd>Ctrl + F</kbd></div>
+      <div class="shortcut"><span>Geri al</span><kbd>Ctrl + Z</kbd></div>
+      <div class="shortcut"><span>Yeniden yap</span><kbd>Ctrl + Y</kbd></div>
+      <div class="shortcut"><span>Seçileni sil</span><kbd>Del</kbd></div>
+      <div class="shortcut"><span>Seçimi kaldır / kapat</span><kbd>Esc</kbd></div>
+      <div class="shortcut"><span>Yakınlaştır</span><kbd>+</kbd></div>
+      <div class="shortcut"><span>Uzaklaştır</span><kbd>−</kbd></div>
+      <div class="shortcut"><span>Sığdır</span><kbd>0</kbd></div>
+      <div class="shortcut"><span>Yardım</span><kbd>?</kbd></div>
+      <div class="shortcut"><span>İstatistikler</span><kbd>Ctrl + I</kbd></div>
+      <div class="shortcut"><span>PNG İndir</span><kbd>Ctrl + E</kbd></div>
+    </div>
+    <h3 style="color:#aab1c6;font-size:12px;margin:18px 0 6px">Kullanım</h3>
+    <ul style="color:#bbb;font-size:12.5px;line-height:1.7;padding-left:18px">
+      <li><b>Sürükle</b>: kişiyi başka yere taşır</li>
+      <li><b style="color:#ff97c4">Kişiyi başka kişinin üzerine sürükle</b>: aralarında ilişki kurar (evli/boşanmış/partner/çocuk/ebeveyn/özel)</li>
+      <li><b style="color:#ffe066">Shift + Sürükle</b>: tek eksen kilidi (yatay veya dikey) — çizgileri düz tutmak için</li>
+      <li><b>Sağ tık</b>: bağlam menüsü (düzenle, sil, eş/çocuk/ebeveyn ekle, odakla)</li>
+      <li><b>Tıkla</b>: kişiyi seçer (sağ panelde detay)</li>
+      <li><b>Çift tıkla</b>: yerinde düzenle</li>
+      <li>Üzerine gelince çıkan <b style="color:#b577da">+ butonları</b>: ebeveyn / eş / çocuk hızlı ekle</li>
+      <li>Bir kişi üstüne gelince <b>akraba parlatma</b> aktifleşir</li>
+      <li>Canvas'a <b>fotoğraf dosyası sürükle</b>: hedef kişiye yükler</li>
+      <li>Mouse tekerleği: <b>zoom</b> (her zaman, Ctrl gerekmez)</li>
+      <li>Boş alana <b>tıkla-sürükle</b> veya <b>orta tuş</b>: pan</li>
+    </ul>
+    <div class="modal-actions"><button class="btn primary" id="helpCloseBtn">Kapat</button></div>
+  </div>
+</div>
+
+<!-- Drag-to-connect modal -->
+<div class="modal-overlay" id="connectModal">
+  <div class="modal">
+    <h2>🔗 Bağlantı Kur</h2>
+    <div class="connect-preview" id="connectPreview"></div>
+    <div class="help-text" style="margin-bottom:14px;text-align:center">Bu iki kişi arasında nasıl bir bağ kurulsun?</div>
+    <div class="connect-grid">
+      <button class="conn-btn" data-rel="married"><span class="conn-icon">💍</span><b>Evli</b></button>
+      <button class="conn-btn" data-rel="divorced"><span class="conn-icon">💔</span><b>Boşanmış</b></button>
+      <button class="conn-btn" data-rel="partner"><span class="conn-icon">◇</span><b>Partner</b></button>
+      <button class="conn-btn" data-rel="samesex"><span class="conn-icon">⚭</span><b>Eşcinsel partner</b></button>
+      <button class="conn-btn" data-rel="child-of-source"><span class="conn-icon">⬇</span><b>Hedef, kaynağın ÇOCUĞU</b><div class="conn-sub" id="connectChildSub"></div></button>
+      <button class="conn-btn" data-rel="parent-of-source"><span class="conn-icon">⬆</span><b>Hedef, kaynağın EBEVEYNİ</b><div class="conn-sub" id="connectParentSub"></div></button>
+      <button class="conn-btn" data-rel="sibling"><span class="conn-icon">👫</span><b>Kardeş yap</b><div class="conn-sub">aynı ebeveynleri paylaşır</div></button>
+      <button class="conn-btn" data-rel="custom"><span class="conn-icon">✦</span><b>Özel etiket...</b></button>
+    </div>
+    <div id="connectCustomGroup" style="display:none">
+      <div class="form-group">
+        <label>Özel etiket</label>
+        <input type="text" id="connectCustomLabel" placeholder="Örn: Üvey kardeş, manevi evlat...">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="connectCustomCancelBtn">Geri</button>
+        <button type="button" class="btn primary" id="connectCustomSubmitBtn">Bağla</button>
+      </div>
+    </div>
+    <div class="modal-actions" id="connectMainActions">
+      <button type="button" class="btn" id="connectCancelBtn">İptal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sağ-tık bağlam menüsü -->
+<div id="contextMenu" class="context-menu">
+  <button data-act="edit">✎ Düzenle</button>
+  <button data-act="add-spouse">💞 Eş / Partner ekle</button>
+  <button data-act="add-child">👶 Çocuk ekle</button>
+  <button data-act="add-parent">👨‍👩 Ebeveyn ekle</button>
+  <div class="menu-divider"></div>
+  <button data-act="focus">🎯 Sadece akrabaları göster</button>
+  <div class="menu-divider"></div>
+  <button data-act="delete" class="danger">🗑 Sil</button>
+</div>
+
+<!-- Shift kilit göstergesi -->
+<div id="shiftHint" class="shift-hint"></div>
+
+<input type="file" id="importFile" accept=".json" style="display:none">
+
+<script>
+//=================================================================
+// STATE & STORAGE
+//=================================================================
+const STORAGE_KEY='familyTreeBuilder_v2', WELCOME_KEY='familyTreeBuilder_welcome';
+let state={people:[],unions:[],families:[],nextId:1};
+let selectedId=null;
+let history={past:[],future:[]};
+const HISTORY_LIMIT=50;
+let suppressHistory=false;
+
+function saveState(){
+  document.getElementById('saveIndicator').classList.add('saving');
+  document.getElementById('saveIndicator').textContent='⏳ Kaydediliyor...';
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    setTimeout(()=>{
+      document.getElementById('saveIndicator').classList.remove('saving');
+      document.getElementById('saveIndicator').textContent='✓ Kaydedildi';
+    },200);
+  }catch(e){
+    document.getElementById('saveIndicator').textContent='⚠ Depolama dolu!';
+    alert('localStorage dolu. Lütfen JSON\'a dışa aktar ve fotoğrafları küçült.');
+  }
+}
+function loadState(){
+  const s=localStorage.getItem(STORAGE_KEY);
+  if(s){try{state=JSON.parse(s);}catch(e){console.error(e);}}
+}
+function pushHistory(){
+  if(suppressHistory)return;
+  history.past.push(JSON.stringify(state));
+  if(history.past.length>HISTORY_LIMIT)history.past.shift();
+  history.future=[];
+  updateUndoRedoButtons();
+}
+function undo(){
+  if(history.past.length===0)return;
+  history.future.push(JSON.stringify(state));
+  state=JSON.parse(history.past.pop());
+  saveState();renderAll();updateUndoRedoButtons();
+}
+function redo(){
+  if(history.future.length===0)return;
+  history.past.push(JSON.stringify(state));
+  state=JSON.parse(history.future.pop());
+  saveState();renderAll();updateUndoRedoButtons();
+}
+function updateUndoRedoButtons(){
+  document.getElementById('undoBtn').disabled=history.past.length===0;
+  document.getElementById('redoBtn').disabled=history.future.length===0;
+}
+
+//=================================================================
+// MODEL OPS
+//=================================================================
+function newId(p='p'){return p+(state.nextId++);}
+function addPerson(d){
+  pushHistory();
+  const p={id:newId('p'),name:d.name||'İsimsiz',gender:d.gender||'other',fam:d.fam||'outsider',
+    dob:d.dob||null,dod:d.dod||null,dead:!!d.dod,x:d.x!=null?d.x:200,y:d.y!=null?d.y:200,
+    desc:d.desc||'',photo:d.photo||null,birthPlace:d.birthPlace||'',deathPlace:d.deathPlace||'',
+    occupation:d.occupation||''};
+  state.people.push(p);saveState();return p;
+}
+function updatePerson(id,d){
+  pushHistory();
+  const p=peopleById(id);if(!p)return;
+  Object.assign(p,d);p.dead=!!p.dod;saveState();
+}
+function deletePerson(id){
+  pushHistory();
+  state.people=state.people.filter(p=>p.id!==id);
+  state.unions=state.unions.filter(u=>u.a!==id&&u.b!==id);
+  state.families=state.families.filter(f=>!f.parents.includes(id)&&f.child!==id);
+  if(selectedId===id)selectedId=null;
+  saveState();
+}
+function addUnion(a,b,type,customLabel){
+  if(a===b)return null;
+  const ex=state.unions.find(u=>(u.a===a&&u.b===b)||(u.a===b&&u.b===a));
+  if(ex)return ex;
+  pushHistory();
+  const u={id:newId('u'),a,b,type,customLabel:customLabel||null};
+  state.unions.push(u);saveState();return u;
+}
+function deleteUnion(id){
+  pushHistory();
+  state.unions=state.unions.filter(u=>u.id!==id);saveState();
+}
+function addFamily(parents,child,type,customLabel){
+  if(parents.includes(child))return null;
+  const ex=state.families.find(f=>f.child===child&&f.parents.length===parents.length&&parents.every(p=>f.parents.includes(p)));
+  if(ex)return ex;
+  pushHistory();
+  const f={id:newId('f'),parents,child,type,customLabel:customLabel||null};
+  state.families.push(f);saveState();return f;
+}
+function removeParentChild(parentId,childId){
+  pushHistory();
+  state.families=state.families.filter(f=>f.child!==childId||!f.parents.includes(parentId));
+  saveState();
+}
+
+//=================================================================
+// HELPERS
+//=================================================================
+function peopleById(id){return state.people.find(p=>p.id===id);}
+function initials(name){
+  const parts=(name||'').split(' ').filter(x=>x.length>0);
+  if(!parts.length)return '?';
+  if(parts.length===1)return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0)+parts[parts.length-1].charAt(0)).toUpperCase();
+}
+function getUnionsOf(id){return state.unions.filter(u=>u.a===id||u.b===id);}
+function getSpousesOf(id){return getUnionsOf(id).map(u=>u.a===id?u.b:u.a);}
+function getParentsOf(id){return state.families.filter(f=>f.child===id).flatMap(f=>f.parents);}
+function getChildrenOf(id){return state.families.filter(f=>f.parents.includes(id)).map(f=>f.child);}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function getRelatives(id){
+  const r=new Set([id]);
+  function asc(p){state.families.filter(f=>f.child===p).forEach(f=>f.parents.forEach(x=>{if(!r.has(x)){r.add(x);asc(x);}}));}
+  function dec(p){state.families.filter(f=>f.parents.includes(p)).forEach(f=>{if(!r.has(f.child)){r.add(f.child);dec(f.child);}});}
+  asc(id);dec(id);
+  getParentsOf(id).forEach(p=>getChildrenOf(p).forEach(c=>r.add(c)));
+  Array.from(r).forEach(x=>getSpousesOf(x).forEach(s=>r.add(s)));
+  return r;
+}
+function getFamilyColor(f){
+  return {demir:'#6db4f9',kaya:'#74e09b',sahin:'#ffae64',ozturk:'#c084e2',outsider:'#c0c8d3',pink:'#ff97c4',cyan:'#5fd6ff',yellow:'#ffe066',red:'#ff6b6b'}[f]||'#aaa';
+}
+function getCoupleColor(p){return p.length?getFamilyColor((peopleById(p[0])||{}).fam):'#aaa';}
+
+// Photo compression
+function compressImage(file,maxSize=250){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        if(w>h){if(w>maxSize){h=h*maxSize/w;w=maxSize;}}
+        else{if(h>maxSize){w=w*maxSize/h;h=maxSize;}}
+        c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.85));
+      };
+      img.onerror=reject;
+      img.src=e.target.result;
+    };
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// Tree validation
+function validatePerson(p){
+  const warns=[];
+  if(p.dob&&p.dod&&p.dod<p.dob)warns.push(`Ölüm yılı (${p.dod}) doğumdan (${p.dob}) önce.`);
+  if(p.dob&&p.dod&&p.dod-p.dob>120)warns.push(`Yaş 120'den fazla görünüyor (${p.dod-p.dob}).`);
+  getParentsOf(p.id).forEach(pid=>{
+    const par=peopleById(pid);
+    if(par&&par.dob&&p.dob&&p.dob<=par.dob)warns.push(`${par.name} doğumdan sonra (${par.dob}) çocuk doğmuş gibi (${p.dob}).`);
+  });
+  return warns;
+}
+
+//=================================================================
+// VIEW STATE (zoom/pan)
+//=================================================================
+const view={scale:1,offsetX:0,offsetY:0};
+function applyTransform(){
+  document.getElementById('canvas').style.transform=`translate(${view.offsetX}px,${view.offsetY}px) scale(${view.scale})`;
+  document.getElementById('zoomLevel').textContent=Math.round(view.scale*100)+'%';
+  updateMinimap();
+}
+function setZoom(s,cx,cy){
+  const oldScale=view.scale;
+  view.scale=Math.max(.2,Math.min(3,s));
+  if(cx!=null&&cy!=null){
+    const k=view.scale/oldScale;
+    view.offsetX=cx-(cx-view.offsetX)*k;
+    view.offsetY=cy-(cy-view.offsetY)*k;
+  }
+  applyTransform();
+}
+function fitToView(){
+  if(!state.people.length){view.scale=1;view.offsetX=0;view.offsetY=0;applyTransform();return;}
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  state.people.forEach(p=>{
+    minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);
+    maxX=Math.max(maxX,p.x+110);maxY=Math.max(maxY,p.y+130);
+  });
+  const w=maxX-minX+100,h=maxY-minY+100;
+  const wrap=document.getElementById('canvasWrap');
+  const sx=wrap.clientWidth/w,sy=wrap.clientHeight/h;
+  view.scale=Math.min(1,Math.min(sx,sy)*.9);
+  view.offsetX=-minX*view.scale+50;
+  view.offsetY=-minY*view.scale+50;
+  applyTransform();
+}
+
+//=================================================================
+// RENDER
+//=================================================================
+const canvasEl=document.getElementById('canvas');
+const canvasWrap=document.getElementById('canvasWrap');
+const svgEl=document.getElementById('lines');
+const SVG_NS='http://www.w3.org/2000/svg';
+const BOX_W=110,AVATAR_SZ=80;
+const cx=p=>p.x+BOX_W/2,cy=p=>p.y+AVATAR_SZ/2,cb=p=>p.y+AVATAR_SZ;
+
+function renderAll(){
+  document.getElementById('emptyState').style.display=state.people.length===0?'block':'none';
+  canvasEl.querySelectorAll('.person,.union-marker').forEach(el=>el.remove());
+  svgEl.innerHTML='';
+  let maxX=1400,maxY=900;
+  state.people.forEach(p=>{
+    if(p.x+200>maxX)maxX=p.x+200;
+    if(p.y+200>maxY)maxY=p.y+200;
+  });
+  canvasEl.style.width=maxX+'px';canvasEl.style.height=maxY+'px';
+  svgEl.setAttribute('viewBox',`0 0 ${maxX} ${maxY}`);
+  svgEl.setAttribute('width',maxX);svgEl.setAttribute('height',maxY);
+  state.people.forEach(renderPerson);
+  state.unions.forEach(renderUnion);
+  renderFamilies();
+  if(selectedId){const el=canvasEl.querySelector(`.person[data-id="${selectedId}"]`);if(el)el.classList.add('selected');}
+  renderSidebar();
+  updateStatus();
+  updateMinimap();
+}
+
+function renderPerson(p){
+  const el=document.createElement('div');
+  el.className='person';el.dataset.id=p.id;
+  el.style.left=p.x+'px';el.style.top=p.y+'px';
+  const ini=initials(p.name);
+  const yearLabel=p.dod?`${p.dob||'?'} – ${p.dod}`:(p.dob?`${p.dob} –`:'');
+  const deadBadge=p.dead?'<div class="dead-badge">✝</div>':'';
+  const photoStyle=p.photo?`background-image:url('${p.photo}');`:'';
+  const ava=`<div class="avatar ${p.fam} ${p.gender} ${p.photo?'with-photo':''}" style="${photoStyle}">${p.photo?'':ini}${deadBadge}</div>`;
+  const warns=validatePerson(p);
+  if(warns.length)el.classList.add('has-warning');
+  el.innerHTML=`${ava}<div class="name">${escapeHtml(p.name)}</div><div class="dates">${yearLabel}</div>
+    <div class="quick-actions">
+      <button class="quick-btn parent" title="Ebeveyn ekle" data-act="parent">+</button>
+      <button class="quick-btn spouse" title="Eş ekle" data-act="spouse">+</button>
+      <button class="quick-btn child" title="Çocuk ekle" data-act="child">+</button>
+    </div>`;
+  setupPersonInteractions(el,p);
+  canvasEl.appendChild(el);
+}
+
+function renderUnion(u){
+  const a=peopleById(u.a),b=peopleById(u.b);
+  if(!a||!b)return;
+  let x1=cx(a),x2=cx(b);if(x1>x2)[x1,x2]=[x2,x1];
+  const yMid=(cy(a)+cy(b))/2;
+  let style={stroke:'#fff',width:3};let symbol='💍',symClass='';
+  if(u.type==='divorced'){style.stroke='#ff8c42';style.dash='8 5';symbol='💔';}
+  else if(u.type==='partner'){style.stroke='#5fd6ff';style.dash='2 5';symbol='◇';symClass='partner';}
+  else if(u.type==='samesex'){style.stroke='#f4d03f';style.dash='5 4';symbol='⚭';symClass='samesex';}
+  else if(u.type==='custom'){style.stroke='#b577da';style.dash='6 3';symbol='✦';symClass='custom';}
+  let d;
+  if(a.y===b.y)d=`M ${x1} ${yMid} L ${x2} ${yMid}`;
+  else d=`M ${cx(a)} ${cy(a)} C ${cx(a)} ${(cy(a)+cy(b))/2}, ${cx(b)} ${(cy(a)+cy(b))/2}, ${cx(b)} ${cy(b)}`;
+  const path=makePath(d,style);
+  path.dataset.persons=`${u.a},${u.b}`;
+  if(u.type!=='divorced'){
+    const m=document.createElement('div');m.className='union-marker '+symClass;
+    m.style.left=((x1+x2)/2)+'px';m.style.top=yMid+'px';
+    m.dataset.persons=`${u.a},${u.b}`;m.textContent=symbol;
+    if(u.type==='custom'&&u.customLabel)m.title=u.customLabel;
+    canvasEl.appendChild(m);
+  }
+  if(u.type==='custom'&&u.customLabel){
+    const t=document.createElementNS(SVG_NS,'text');
+    t.setAttribute('x',(x1+x2)/2);t.setAttribute('y',yMid-14);
+    t.setAttribute('text-anchor','middle');t.setAttribute('fill','#b577da');
+    t.setAttribute('font-size','10');t.setAttribute('font-weight','bold');
+    t.dataset.persons=`${u.a},${u.b}`;t.textContent=u.customLabel;
+    svgEl.appendChild(t);
+  }
+}
+
+function renderFamilies(){
+  const g={};
+  state.families.forEach(f=>{
+    const k=[...f.parents].sort().join('|');
+    if(!g[k])g[k]={parents:f.parents,children:[]};
+    g[k].children.push({id:f.child,type:f.type,customLabel:f.customLabel});
+  });
+  let bi=0;
+  Object.values(g).forEach(grp=>{
+    let oX,oY;
+    if(grp.parents.length===2){
+      const p1=peopleById(grp.parents[0]),p2=peopleById(grp.parents[1]);
+      if(!p1||!p2)return;
+      oX=(cx(p1)+cx(p2))/2;oY=(cy(p1)+cy(p2))/2;
+    }else if(grp.parents.length===1){
+      const p1=peopleById(grp.parents[0]);if(!p1)return;
+      oX=cx(p1);oY=cb(p1);
+    }else return;
+    const kids=grp.children.map(c=>({...c,person:peopleById(c.id)})).filter(x=>x.person);
+    if(!kids.length)return;
+    const childY=Math.min(...kids.map(c=>c.person.y));
+    const off=(bi%6)*10;bi++;
+    let busY=childY-36-off;
+    if(busY<=oY+20)busY=oY+30+off;
+    kids.forEach(c=>{
+      let st={stroke:getCoupleColor(grp.parents),width:2.3};
+      if(c.type==='adopted'){st.stroke='#50c878';st.dash='6 4';}
+      if(c.type==='surrogate'){st.stroke='#b577da';st.dash='3 4';}
+      if(c.type==='custom'){st.stroke='#fdcb6e';st.dash='4 3';}
+      const cxx=cx(c.person);
+      const d=`M ${oX} ${oY+8} L ${oX} ${busY} L ${cxx} ${busY} L ${cxx} ${c.person.y}`;
+      const path=makePath(d,st);
+      path.dataset.persons=[...grp.parents,c.id].join(',');
+      if(c.type==='custom'&&c.customLabel){
+        const t=document.createElementNS(SVG_NS,'text');
+        t.setAttribute('x',cxx);t.setAttribute('y',busY-4);
+        t.setAttribute('text-anchor','middle');t.setAttribute('fill','#fdcb6e');
+        t.setAttribute('font-size','10');t.setAttribute('font-weight','bold');
+        t.dataset.persons=[...grp.parents,c.id].join(',');t.textContent=c.customLabel;
+        svgEl.appendChild(t);
+      }
+    });
+  });
+}
+
+function makePath(d,opts={}){
+  const p=document.createElementNS(SVG_NS,'path');
+  p.setAttribute('d',d);p.setAttribute('fill','none');
+  p.setAttribute('stroke',opts.stroke||'#fff');
+  p.setAttribute('stroke-width',opts.width||2);
+  p.setAttribute('stroke-linecap','round');
+  if(opts.dash)p.setAttribute('stroke-dasharray',opts.dash);
+  svgEl.appendChild(p);return p;
+}
+
+function updateStatus(){
+  document.getElementById('statusInfo').textContent=`${state.people.length} kişi · ${state.unions.length} ilişki · ${state.families.length} ebeveyn-çocuk bağı`;
+}
+
+//=================================================================
+// MINIMAP
+//=================================================================
+function updateMinimap(){
+  const c=document.getElementById('minimapCanvas');
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  if(!state.people.length){
+    document.getElementById('minimapViewport').style.display='none';
+    return;
+  }
+  let minX=0,minY=0,maxX=parseInt(canvasEl.style.width)||1400,maxY=parseInt(canvasEl.style.height)||900;
+  const sX=c.width/maxX,sY=c.height/maxY;
+  ctx.fillStyle='rgba(95,168,245,.3)';
+  state.people.forEach(p=>{
+    ctx.fillStyle=getFamilyColor(p.fam);
+    ctx.fillRect(p.x*sX,p.y*sY,Math.max(2,110*sX),Math.max(2,80*sY));
+  });
+  const wrap=canvasWrap;
+  const vp=document.getElementById('minimapViewport');
+  vp.style.display='block';
+  vp.style.left=((wrap.scrollLeft-view.offsetX)/view.scale*sX)+'px';
+  vp.style.top=((wrap.scrollTop-view.offsetY)/view.scale*sY)+'px';
+  vp.style.width=(wrap.clientWidth/view.scale*sX)+'px';
+  vp.style.height=(wrap.clientHeight/view.scale*sY)+'px';
+}
+
+document.getElementById('minimap').addEventListener('click',e=>{
+  const c=document.getElementById('minimapCanvas');
+  const rect=c.getBoundingClientRect();
+  const px=(e.clientX-rect.left)/rect.width;
+  const py=(e.clientY-rect.top)/rect.height;
+  const tx=px*(parseInt(canvasEl.style.width)||1400);
+  const ty=py*(parseInt(canvasEl.style.height)||900);
+  canvasWrap.scrollLeft=tx*view.scale+view.offsetX-canvasWrap.clientWidth/2;
+  canvasWrap.scrollTop=ty*view.scale+view.offsetY-canvasWrap.clientHeight/2;
+});
+
+canvasWrap.addEventListener('scroll',updateMinimap);
+
+//=================================================================
+// SIDEBAR
+//=================================================================
+const sidebarEmptyEl=document.getElementById('sidebarEmpty');
+const sidebarContentEl=document.getElementById('sidebarContent');
+
+function renderSidebar(){
+  const p=peopleById(selectedId);
+  if(!p){sidebarEmptyEl.style.display='block';sidebarContentEl.style.display='none';return;}
+  sidebarEmptyEl.style.display='none';sidebarContentEl.style.display='block';
+  const parents=getParentsOf(p.id).map(peopleById).filter(Boolean);
+  const children=getChildrenOf(p.id).map(peopleById).filter(Boolean);
+  const unions=getUnionsOf(p.id);
+  const ini=initials(p.name);
+  const yearLabel=p.dod?`${p.dob||'?'} – ${p.dod}`:(p.dob?`${p.dob} –`:'');
+  const utext={married:'💍 Evli',divorced:'💔 Boşanmış',partner:'◇ Partner',samesex:'⚭ Eşcinsel partner',custom:'✦ Özel'};
+  const ftext={bio:'Biyolojik',adopted:'+ Evlat edinme',surrogate:'⚕ Taşıyıcı annelik',custom:'✦ Özel'};
+  const photoStyle=p.photo?`background-image:url('${p.photo}')`:'';
+  const warns=validatePerson(p);
+  const warnHtml=warns.length?`<div class="warning-box">⚠ <b>Dikkat:</b><br>${warns.map(escapeHtml).join('<br>')}</div>`:'';
+  const renderMini=x=>{
+    const ph=x.photo?`background-image:url('${x.photo}')`:'';
+    return `<div class="mini-avatar ${x.fam} ${x.gender}" style="${ph}">${x.photo?'':initials(x.name)}</div>`;
+  };
+  const unionHtml=unions.map(u=>{
+    const o=peopleById(u.a===p.id?u.b:u.a);if(!o)return '';
+    const lbl=u.type==='custom'?(u.customLabel||'Özel'):(utext[u.type]||u.type);
+    return `<div class="rel-item">${renderMini(o)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${o.id}">${escapeHtml(o.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-union" data-id="${u.id}" title="Sil">×</button></div>`;
+  }).join('');
+  const parentHtml=parents.map(par=>{
+    const fa=state.families.find(f=>f.parents.includes(par.id)&&f.child===p.id);
+    const lbl=fa?(fa.type==='custom'?(fa.customLabel||'Özel'):(ftext[fa.type]||fa.type)):'';
+    return `<div class="rel-item">${renderMini(par)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${par.id}">${escapeHtml(par.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-pc" data-parent="${par.id}" data-child="${p.id}" title="Bağı kaldır">×</button></div>`;
+  }).join('');
+  const childHtml=children.map(c=>{
+    const fa=state.families.find(f=>f.child===c.id&&f.parents.includes(p.id));
+    const lbl=fa?(fa.type==='custom'?(fa.customLabel||'Özel'):(ftext[fa.type]||fa.type)):'';
+    return `<div class="rel-item">${renderMini(c)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${c.id}">${escapeHtml(c.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-pc" data-parent="${p.id}" data-child="${c.id}" title="Bağı kaldır">×</button></div>`;
+  }).join('');
+  const fieldRow=(l,v)=>v?`<div class="field-row"><span class="field-label">${l}</span><span class="field-value">${escapeHtml(v)}</span></div>`:'';
+  sidebarContentEl.innerHTML=`
+    <div class="person-card">
+      <div class="avatar ${p.fam} ${p.gender} ${p.photo?'with-photo':''}" style="${photoStyle}">${p.photo?'':ini}${p.dead?'<div class="dead-badge">✝</div>':''}</div>
+      <div class="name editable" data-action="rename" title="Çift tıkla: düzenle">${escapeHtml(p.name)}</div>
+      <div class="dates">${yearLabel}</div>
+      ${fieldRow('Meslek',p.occupation)}
+      ${fieldRow('Doğum yeri',p.birthPlace)}
+      ${fieldRow('Ölüm yeri',p.deathPlace)}
+      ${p.desc?`<div class="desc">${escapeHtml(p.desc)}</div>`:''}
+      ${warnHtml}
+      <div class="actions">
+        <button class="btn" data-action="edit-person">✎ Düzenle</button>
+        <button class="btn danger" data-action="delete-person">🗑 Sil</button>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Eşler & Partnerler (${unions.length})</h3>
+      <div class="rel-list">${unionHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">Henüz eklenmedi</div>'}</div>
+      <button class="btn primary rel-add-btn" data-action="add-union">+ Eş / Partner Ekle</button>
+    </div>
+    <div class="sidebar-section">
+      <h3>Ebeveynler (${parents.length})</h3>
+      <div class="rel-list">${parentHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">Henüz eklenmedi</div>'}</div>
+      <button class="btn primary rel-add-btn" data-action="add-parent">+ Ebeveyn Ekle</button>
+    </div>
+    <div class="sidebar-section">
+      <h3>Çocuklar (${children.length})</h3>
+      <div class="rel-list">${childHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">Henüz eklenmedi</div>'}</div>
+      <button class="btn primary rel-add-btn" data-action="add-child">+ Çocuk Ekle</button>
+    </div>`;
+}
+
+sidebarContentEl.addEventListener('click',e=>{
+  const t=e.target.closest('[data-action]');if(!t)return;
+  const a=t.dataset.action;
+  switch(a){
+    case 'select':selectPerson(t.dataset.id);break;
+    case 'edit-person':openEditPerson(selectedId);break;
+    case 'delete-person':
+      if(confirm(`"${peopleById(selectedId).name}" silinsin mi?`)){deletePerson(selectedId);renderAll();}
+      break;
+    case 'del-union':deleteUnion(t.dataset.id);renderAll();break;
+    case 'del-pc':removeParentChild(t.dataset.parent,t.dataset.child);renderAll();break;
+    case 'add-union':openUnionModal(selectedId);break;
+    case 'add-parent':openParentModal(selectedId);break;
+    case 'add-child':openChildModal(selectedId);break;
+    case 'rename':inlineEditName(selectedId);break;
+  }
+});
+
+function inlineEditName(id){
+  const p=peopleById(id);if(!p)return;
+  const el=sidebarContentEl.querySelector('.name.editable');if(!el)return;
+  const newName=prompt('Yeni isim:',p.name);
+  if(newName!==null&&newName.trim()){updatePerson(id,{name:newName.trim()});renderAll();}
+}
+
+//=================================================================
+// SELECT & HOVER FOCUS
+//=================================================================
+function selectPerson(id){
+  selectedId=id;
+  document.querySelectorAll('.person.selected').forEach(el=>el.classList.remove('selected'));
+  if(id){const el=canvasEl.querySelector(`.person[data-id="${id}"]`);if(el)el.classList.add('selected');}
+  renderSidebar();
+}
+function applyFocus(id){
+  if(id&&peopleById(id)){
+    canvasWrap.classList.add('focusing');
+    const r=getRelatives(id);
+    document.querySelectorAll('.person').forEach(el=>el.classList.toggle('related',r.has(el.dataset.id)));
+    document.querySelectorAll('.union-marker').forEach(el=>{
+      const ps=(el.dataset.persons||'').split(',');
+      el.classList.toggle('related',ps.every(p=>r.has(p)));
+    });
+    svgEl.querySelectorAll('path,text').forEach(p=>{
+      const ps=(p.dataset.persons||'').split(',');
+      p.classList.toggle('related-line',ps.length&&ps.every(i=>r.has(i)));
+    });
+  }else{
+    canvasWrap.classList.remove('focusing');
+    document.querySelectorAll('.related,.related-line').forEach(el=>el.classList.remove('related','related-line'));
+  }
+}
+
+//=================================================================
+// PERSON INTERACTIONS
+//=================================================================
+function setupPersonInteractions(el,p){
+  let dragging=false,moved=false,sx,sy,ox,oy;
+  let dropTarget=null;
+  const shiftHint=document.getElementById('shiftHint');
+
+  function clearDropTarget(){
+    if(dropTarget){dropTarget.classList.remove('drop-target');dropTarget=null;}
+  }
+
+  el.addEventListener('mousedown',e=>{
+    if(e.button!==0||e.target.closest('.quick-btn'))return;
+    dragging=true;moved=false;sx=e.clientX;sy=e.clientY;ox=p.x;oy=p.y;
+    dropTarget=null;
+    el.classList.add('dragging');e.preventDefault();
+  });
+
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    let dx=(e.clientX-sx)/view.scale,dy=(e.clientY-sy)/view.scale;
+    if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
+
+    // Shift+drag: tek eksen kilit
+    if(e.shiftKey&&moved){
+      if(Math.abs(dx)>Math.abs(dy)){
+        dy=0;
+        shiftHint.textContent='⇄ Yatay kilit (Shift)';
+      }else{
+        dx=0;
+        shiftHint.textContent='⇅ Dikey kilit (Shift)';
+      }
+      shiftHint.classList.add('show');
+    }else{
+      shiftHint.classList.remove('show');
+    }
+
+    p.x=Math.max(0,ox+dx);p.y=Math.max(0,oy+dy);
+    el.style.left=p.x+'px';el.style.top=p.y+'px';
+
+    // Drag-to-connect: altındaki .person'u tespit et
+    el.style.pointerEvents='none';
+    const below=document.elementFromPoint(e.clientX,e.clientY);
+    el.style.pointerEvents='';
+    const tg=below?below.closest('.person'):null;
+    if(tg&&tg!==el&&tg.dataset.id!==p.id){
+      if(dropTarget!==tg){clearDropTarget();dropTarget=tg;dropTarget.classList.add('drop-target');}
+    }else{
+      clearDropTarget();
+    }
+
+    if(moved)debouncedRelink();
+  });
+
+  document.addEventListener('mouseup',()=>{
+    if(!dragging)return;
+    dragging=false;
+    el.classList.remove('dragging');
+    shiftHint.classList.remove('show');
+
+    if(dropTarget&&moved){
+      // Drop on another person → connect modal
+      const targetId=dropTarget.dataset.id;
+      clearDropTarget();
+      // Pozisyonu eski haline döndür (sürükleme bağlanmaya dönüşüyor, taşınmaya değil)
+      p.x=ox;p.y=oy;
+      el.style.left=p.x+'px';el.style.top=p.y+'px';
+      debouncedRelink();
+      openConnectModal(p.id,targetId);
+    }else if(moved){
+      saveState();renderAll();
+    }
+    clearDropTarget();
+  });
+
+  el.addEventListener('click',e=>{if(moved){moved=false;return;}e.stopPropagation();selectPerson(p.id);});
+  el.addEventListener('dblclick',e=>{e.stopPropagation();openEditPerson(p.id);});
+  el.addEventListener('contextmenu',e=>{
+    e.preventDefault();e.stopPropagation();
+    selectPerson(p.id);
+    showContextMenu(e.clientX,e.clientY,p.id);
+  });
+  el.addEventListener('mouseenter',()=>applyFocus(p.id));
+  el.addEventListener('mouseleave',()=>applyFocus(null));
+  el.querySelectorAll('.quick-btn').forEach(b=>{
+    b.addEventListener('click',e=>{
+      e.stopPropagation();selectPerson(p.id);
+      const a=b.dataset.act;
+      if(a==='spouse')openUnionModal(p.id);
+      else if(a==='child')openChildModal(p.id);
+      else if(a==='parent')openParentModal(p.id);
+    });
+  });
+  // Photo drop (HTML5 file drag)
+  el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
+  el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+  el.addEventListener('drop',async e=>{
+    e.preventDefault();el.classList.remove('drag-over');
+    const f=e.dataTransfer.files[0];
+    if(!f||!f.type.startsWith('image/'))return;
+    const photo=await compressImage(f);
+    updatePerson(p.id,{photo});renderAll();
+  });
+}
+
+let relinkTimer=null;
+function debouncedRelink(){
+  if(relinkTimer)cancelAnimationFrame(relinkTimer);
+  relinkTimer=requestAnimationFrame(()=>{
+    svgEl.innerHTML='';
+    canvasEl.querySelectorAll('.union-marker').forEach(el=>el.remove());
+    state.unions.forEach(renderUnion);renderFamilies();
+  });
+}
+
+canvasWrap.addEventListener('click',e=>{
+  if(e.target===canvasWrap||e.target===canvasEl||e.target===svgEl||e.target.classList.contains('empty-state')){
+    selectPerson(null);
+  }
+});
+
+// Pan with middle button or empty drag
+let panData=null;
+canvasWrap.addEventListener('mousedown',e=>{
+  if(e.button===1||(e.button===0&&(e.target===canvasWrap||e.target===canvasEl||e.target===svgEl))){
+    panData={x:e.clientX,y:e.clientY,sl:canvasWrap.scrollLeft,st:canvasWrap.scrollTop};
+    canvasWrap.classList.add('panning');e.preventDefault();
+  }
+});
+document.addEventListener('mousemove',e=>{
+  if(!panData)return;
+  canvasWrap.scrollLeft=panData.sl-(e.clientX-panData.x);
+  canvasWrap.scrollTop=panData.st-(e.clientY-panData.y);
+});
+document.addEventListener('mouseup',()=>{if(panData){panData=null;canvasWrap.classList.remove('panning');}});
+
+// Mouse tekerleği: her zaman zoom (Ctrl gerekmez), varsayılan dikey kaydırma engellenir
+canvasWrap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const d=e.deltaY>0?0.9:1.1;
+  const rect=canvasWrap.getBoundingClientRect();
+  setZoom(view.scale*d,e.clientX-rect.left,e.clientY-rect.top);
+},{passive:false});
+
+//=================================================================
+// MODALS
+//=================================================================
+const personModal=document.getElementById('personModal');
+const personForm=document.getElementById('personForm');
+const personModalTitle=document.getElementById('personModalTitle');
+let editingPersonId=null,onPersonSavedCallback=null;
+let currentPhoto=null;
+const photoPreview=document.getElementById('photoPreview');
+const photoInput=document.getElementById('photoInput');
+
+function setPhotoPreview(photo){
+  currentPhoto=photo;
+  if(photo){
+    photoPreview.classList.add('has-photo');
+    photoPreview.style.backgroundImage=`url('${photo}')`;
+    document.getElementById('removePhotoBtn').style.display='inline-block';
+  }else{
+    photoPreview.classList.remove('has-photo');
+    photoPreview.style.backgroundImage='';
+    document.getElementById('removePhotoBtn').style.display='none';
+  }
+}
+photoPreview.addEventListener('click',()=>photoInput.click());
+document.getElementById('uploadPhotoBtn').addEventListener('click',()=>photoInput.click());
+document.getElementById('removePhotoBtn').addEventListener('click',()=>setPhotoPreview(null));
+photoInput.addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{setPhotoPreview(await compressImage(f));}catch(err){alert('Fotoğraf okunamadı.');}
+});
+
+function openPersonModal(title,cb){
+  editingPersonId=null;onPersonSavedCallback=cb||null;
+  personModalTitle.textContent=title||'Yeni Kişi';
+  personForm.reset();setPhotoPreview(null);
+  personModal.classList.add('open');
+  setTimeout(()=>personForm.elements['name'].focus(),50);
+}
+function openEditPerson(id){
+  const p=peopleById(id);if(!p)return;
+  editingPersonId=id;onPersonSavedCallback=null;
+  personModalTitle.textContent='✎ Kişi Düzenle';
+  personForm.elements['name'].value=p.name;
+  personForm.elements['gender'].value=p.gender;
+  personForm.elements['fam'].value=p.fam;
+  personForm.elements['dob'].value=p.dob||'';
+  personForm.elements['dod'].value=p.dod||'';
+  personForm.elements['birthPlace'].value=p.birthPlace||'';
+  personForm.elements['deathPlace'].value=p.deathPlace||'';
+  personForm.elements['occupation'].value=p.occupation||'';
+  personForm.elements['desc'].value=p.desc||'';
+  setPhotoPreview(p.photo||null);
+  personModal.classList.add('open');
+}
+document.getElementById('personCancelBtn').onclick=()=>personModal.classList.remove('open');
+personForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const fd=new FormData(personForm);
+  const d={
+    name:(fd.get('name')||'').trim()||'İsimsiz',
+    gender:fd.get('gender'),fam:fd.get('fam'),
+    dob:fd.get('dob')?parseInt(fd.get('dob')):null,
+    dod:fd.get('dod')?parseInt(fd.get('dod')):null,
+    birthPlace:fd.get('birthPlace')||'',
+    deathPlace:fd.get('deathPlace')||'',
+    occupation:fd.get('occupation')||'',
+    desc:fd.get('desc')||'',
+    photo:currentPhoto
+  };
+  if(editingPersonId){updatePerson(editingPersonId,d);personModal.classList.remove('open');renderAll();}
+  else{
+    const newP=addPerson(d);
+    personModal.classList.remove('open');
+    if(onPersonSavedCallback)onPersonSavedCallback(newP);
+    else{
+      newP.x=canvasWrap.scrollLeft+canvasWrap.clientWidth/2-55;
+      newP.y=canvasWrap.scrollTop+100;saveState();
+    }
+    renderAll();selectPerson(newP.id);
+  }
+});
+
+// Union
+const unionModal=document.getElementById('unionModal');
+const unionForm=document.getElementById('unionForm');
+let unionForPersonId=null;
+function openUnionModal(id){
+  unionForPersonId=id;
+  const sel=document.getElementById('unionPartnerSelect');
+  sel.innerHTML='<option value="__new__">+ Yeni kişi ekle...</option>';
+  state.people.filter(p=>p.id!==id).forEach(p=>{sel.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;});
+  document.getElementById('unionTypeSelect').value='married';
+  document.getElementById('unionCustomLabelGroup').style.display='none';
+  unionForm.elements['customLabel'].value='';
+  unionModal.classList.add('open');
+}
+document.getElementById('unionTypeSelect').addEventListener('change',e=>{
+  document.getElementById('unionCustomLabelGroup').style.display=e.target.value==='custom'?'block':'none';
+});
+document.getElementById('unionCancelBtn').onclick=()=>unionModal.classList.remove('open');
+unionForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const fd=new FormData(unionForm);
+  const pV=fd.get('partner'),type=fd.get('type'),lbl=(fd.get('customLabel')||'').trim();
+  const fin=pid=>{addUnion(unionForPersonId,pid,type,lbl||null);unionModal.classList.remove('open');renderAll();};
+  if(pV==='__new__'){
+    unionModal.classList.remove('open');
+    openPersonModal('+ Yeni Kişi (Eş/Partner)',newP=>{
+      const c=peopleById(unionForPersonId);if(c){newP.x=c.x+140;newP.y=c.y;saveState();}
+      fin(newP.id);
+    });
+  }else fin(pV);
+});
+
+// Child
+const childModal=document.getElementById('childModal');
+const childForm=document.getElementById('childForm');
+let childForPersonId=null;
+function openChildModal(id){
+  childForPersonId=id;
+  const o=document.getElementById('childOtherParentSelect');
+  o.innerHTML='<option value="">Yok (tek ebeveyn)</option>';
+  state.people.filter(p=>p.id!==id).forEach(p=>{o.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;});
+  const sp=getSpousesOf(id);if(sp.length)o.value=sp[sp.length-1];
+  const c=document.getElementById('childChildSelect');
+  c.innerHTML='<option value="__new__">+ Yeni kişi ekle...</option>';
+  state.people.filter(p=>p.id!==id).forEach(p=>{c.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;});
+  document.getElementById('childTypeSelect').value='bio';
+  document.getElementById('childCustomLabelGroup').style.display='none';
+  childForm.elements['customLabel'].value='';
+  childModal.classList.add('open');
+}
+document.getElementById('childTypeSelect').addEventListener('change',e=>{
+  document.getElementById('childCustomLabelGroup').style.display=e.target.value==='custom'?'block':'none';
+});
+document.getElementById('childCancelBtn').onclick=()=>childModal.classList.remove('open');
+childForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const fd=new FormData(childForm);
+  const op=fd.get('otherParent')||null,cv=fd.get('child'),tp=fd.get('type'),lbl=(fd.get('customLabel')||'').trim();
+  const parents=op?[childForPersonId,op]:[childForPersonId];
+  const fin=cid=>{addFamily(parents,cid,tp,lbl||null);childModal.classList.remove('open');renderAll();};
+  if(cv==='__new__'){
+    childModal.classList.remove('open');
+    openPersonModal('+ Yeni Kişi (Çocuk)',newP=>{
+      const po=parents.map(peopleById).filter(Boolean);
+      if(po.length){
+        newP.x=po.reduce((s,p)=>s+p.x,0)/po.length;
+        newP.y=Math.max(...po.map(p=>p.y))+250;saveState();
+      }
+      fin(newP.id);
+    });
+  }else fin(cv);
+});
+
+// Parent
+const parentModal=document.getElementById('parentModal');
+const parentForm=document.getElementById('parentForm');
+let parentForPersonId=null;
+function openParentModal(id){
+  parentForPersonId=id;
+  const s1=document.getElementById('parent1Select'),s2=document.getElementById('parent2Select');
+  s1.innerHTML='<option value="__new__">+ Yeni kişi ekle...</option>';
+  s2.innerHTML='<option value="">Yok (tek ebeveyn)</option><option value="__new__">+ Yeni kişi ekle...</option>';
+  state.people.filter(p=>p.id!==id).forEach(p=>{
+    s1.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;
+    s2.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;
+  });
+  document.getElementById('parentTypeSelect').value='bio';
+  document.getElementById('parentCustomLabelGroup').style.display='none';
+  parentForm.elements['customLabel'].value='';
+  parentModal.classList.add('open');
+}
+document.getElementById('parentTypeSelect').addEventListener('change',e=>{
+  document.getElementById('parentCustomLabelGroup').style.display=e.target.value==='custom'?'block':'none';
+});
+document.getElementById('parentCancelBtn').onclick=()=>parentModal.classList.remove('open');
+parentForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const fd=new FormData(parentForm);
+  const p1v=fd.get('parent1'),p2v=fd.get('parent2'),tp=fd.get('type'),lbl=(fd.get('customLabel')||'').trim();
+  const proc=(p1,p2)=>{
+    const parents=p2?[p1,p2]:[p1];
+    addFamily(parents,parentForPersonId,tp,lbl||null);
+    parentModal.classList.remove('open');renderAll();
+  };
+  const h1=cb=>{
+    if(p1v==='__new__'){
+      parentModal.classList.remove('open');
+      openPersonModal('+ Yeni Kişi (Ebeveyn)',newP=>{
+        const ch=peopleById(parentForPersonId);
+        if(ch){newP.x=ch.x;newP.y=Math.max(0,ch.y-250);saveState();}
+        cb(newP.id);
+      });
+    }else cb(p1v);
+  };
+  const h2=(p1,cb)=>{
+    if(p2v==='__new__'){
+      parentModal.classList.remove('open');
+      openPersonModal('+ Yeni Kişi (2. Ebeveyn)',newP=>{
+        const p1obj=peopleById(p1);
+        if(p1obj){newP.x=p1obj.x+140;newP.y=p1obj.y;saveState();}
+        cb(newP.id);
+      });
+    }else if(p2v)cb(p2v);else cb(null);
+  };
+  h1(p1=>h2(p1,p2=>proc(p1,p2)));
+});
+
+// Modal close
+[personModal,unionModal,childModal,parentModal,document.getElementById('welcomeModal'),document.getElementById('statsModal'),document.getElementById('helpModal'),document.getElementById('connectModal')].forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+//=================================================================
+// CONNECT MODAL (drag-to-connect ile açılır)
+//=================================================================
+const connectModal=document.getElementById('connectModal');
+let connectSourceId=null,connectTargetId=null;
+
+function openConnectModal(sourceId,targetId){
+  connectSourceId=sourceId;connectTargetId=targetId;
+  const src=peopleById(sourceId),tgt=peopleById(targetId);
+  if(!src||!tgt)return;
+  const renderMini=(pp)=>{
+    const ph=pp.photo?`background-image:url('${pp.photo}')`:'';
+    return `<div class="person-mini"><div class="avatar ${pp.fam} ${pp.gender}" style="width:64px;height:64px;font-size:20px;margin:0 auto 6px;${ph}">${pp.photo?'':initials(pp.name)}</div><div style="font-size:12px;font-weight:600">${escapeHtml(pp.name)}</div></div>`;
+  };
+  document.getElementById('connectPreview').innerHTML=renderMini(src)+'<div class="arrow">↔</div>'+renderMini(tgt);
+
+  // Alt-açıklamalar: çocuk/ebeveyn seçildiğinde co-parent var mı belirt
+  const srcSpouses=getSpousesOf(sourceId);
+  const srcSpouseName=srcSpouses.length?(peopleById(srcSpouses[0])||{}).name:null;
+  document.getElementById('connectChildSub').textContent=srcSpouseName?`Ebeveyn olarak ${src.name} + ${srcSpouseName}`:'';
+  const srcParents=getParentsOf(sourceId);
+  const srcParentName=srcParents.length?(peopleById(srcParents[0])||{}).name:null;
+  document.getElementById('connectParentSub').textContent=srcParentName?`Co-parent: ${srcParentName}`:'';
+
+  document.getElementById('connectCustomGroup').style.display='none';
+  document.getElementById('connectMainActions').style.display='flex';
+  document.getElementById('connectCustomLabel').value='';
+  connectModal.classList.add('open');
+}
+
+document.querySelectorAll('.conn-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const rel=btn.dataset.rel;
+    if(rel==='custom'){
+      document.getElementById('connectCustomGroup').style.display='block';
+      document.getElementById('connectMainActions').style.display='none';
+      document.getElementById('connectCustomLabel').focus();
+      return;
+    }
+    applyConnection(connectSourceId,connectTargetId,rel,null);
+  });
+});
+
+document.getElementById('connectCustomSubmitBtn').addEventListener('click',()=>{
+  const lbl=document.getElementById('connectCustomLabel').value.trim();
+  if(!lbl){alert('Lütfen bir etiket yazın');return;}
+  applyConnection(connectSourceId,connectTargetId,'custom',lbl);
+});
+document.getElementById('connectCustomLabel').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();document.getElementById('connectCustomSubmitBtn').click();}
+});
+document.getElementById('connectCustomCancelBtn').addEventListener('click',()=>{
+  document.getElementById('connectCustomGroup').style.display='none';
+  document.getElementById('connectMainActions').style.display='flex';
+});
+document.getElementById('connectCancelBtn').addEventListener('click',()=>connectModal.classList.remove('open'));
+
+function applyConnection(sourceId,targetId,rel,customLabel){
+  if(rel==='married'||rel==='divorced'||rel==='partner'||rel==='samesex'||rel==='custom'){
+    addUnion(sourceId,targetId,rel,customLabel);
+  }else if(rel==='child-of-source'){
+    // Hedef, kaynağın çocuğu. Kaynağın eşi varsa ortak ebeveyn olarak ekle.
+    const sp=getSpousesOf(sourceId);
+    const parents=sp.length>0?[sourceId,sp[0]]:[sourceId];
+    addFamily(parents,targetId,'bio');
+  }else if(rel==='parent-of-source'){
+    // Hedef, kaynağın ebeveyni.
+    const existing=getParentsOf(sourceId);
+    const parents=existing.length>0?[targetId,existing[0]]:[targetId];
+    // Eski tek-ebeveyn family'i temizle (çift ebeveyn ekleyeceğimiz için)
+    if(existing.length===1){
+      state.families=state.families.filter(f=>!(f.child===sourceId&&f.parents.length===1&&f.parents[0]===existing[0]));
+    }
+    addFamily(parents,sourceId,'bio');
+  }else if(rel==='sibling'){
+    // Hedef, kaynak ile aynı ebeveynleri paylaşır
+    const sourceParents=getParentsOf(sourceId);
+    if(sourceParents.length===0){
+      alert('Kardeş ilişkisi için önce kaynağın ebeveynleri olmalı.');
+      return;
+    }
+    addFamily(Array.from(new Set(sourceParents)).slice(0,2),targetId,'bio');
+  }
+  connectModal.classList.remove('open');
+  renderAll();
+}
+
+//=================================================================
+// SAĞ-TIK BAĞLAM MENÜSÜ
+//=================================================================
+const contextMenu=document.getElementById('contextMenu');
+let ctxPersonId=null;
+function showContextMenu(x,y,personId){
+  ctxPersonId=personId;
+  contextMenu.classList.add('open');
+  contextMenu.style.left=Math.min(window.innerWidth-220,x)+'px';
+  contextMenu.style.top=Math.min(window.innerHeight-280,y)+'px';
+}
+document.addEventListener('click',()=>contextMenu.classList.remove('open'));
+contextMenu.addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-act]');
+  if(!btn)return;
+  e.stopPropagation();
+  contextMenu.classList.remove('open');
+  if(!ctxPersonId)return;
+  selectPerson(ctxPersonId);
+  const a=btn.dataset.act;
+  if(a==='edit')openEditPerson(ctxPersonId);
+  else if(a==='add-spouse')openUnionModal(ctxPersonId);
+  else if(a==='add-child')openChildModal(ctxPersonId);
+  else if(a==='add-parent')openParentModal(ctxPersonId);
+  else if(a==='focus'){applyFocus(ctxPersonId);}
+  else if(a==='delete'){
+    if(confirm(`"${peopleById(ctxPersonId).name}" silinsin mi?`)){
+      deletePerson(ctxPersonId);renderAll();
+    }
+  }
+});
+
+//=================================================================
+// SEARCH
+//=================================================================
+const searchInput=document.getElementById('searchInput');
+const searchResults=document.getElementById('searchResults');
+let searchActiveIdx=-1;
+
+function performSearch(){
+  const q=searchInput.value.trim().toLowerCase();
+  if(!q){searchResults.classList.remove('open');return;}
+  const matches=state.people.filter(p=>p.name.toLowerCase().includes(q)||(p.occupation||'').toLowerCase().includes(q)||(p.birthPlace||'').toLowerCase().includes(q)).slice(0,8);
+  if(!matches.length){
+    searchResults.innerHTML='<div style="padding:12px;color:#888;font-size:12px;text-align:center">Sonuç yok</div>';
+    searchResults.classList.add('open');return;
+  }
+  searchResults.innerHTML=matches.map((p,i)=>{
+    const ph=p.photo?`background-image:url('${p.photo}')`:'';
+    const yr=p.dob?`<span style="color:#888;font-size:10px;margin-left:4px">${p.dob}${p.dod?'–'+p.dod:''}</span>`:'';
+    return `<div class="search-result" data-id="${p.id}"><div class="mini-avatar ${p.fam} ${p.gender}" style="${ph}">${p.photo?'':initials(p.name)}</div><div>${escapeHtml(p.name)}${yr}</div></div>`;
+  }).join('');
+  searchResults.classList.add('open');
+  searchActiveIdx=-1;
+}
+searchInput.addEventListener('input',performSearch);
+searchInput.addEventListener('focus',()=>{if(searchInput.value.trim())performSearch();});
+searchInput.addEventListener('keydown',e=>{
+  const items=searchResults.querySelectorAll('.search-result');
+  if(e.key==='ArrowDown'){e.preventDefault();searchActiveIdx=Math.min(items.length-1,searchActiveIdx+1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();searchActiveIdx=Math.max(0,searchActiveIdx-1);}
+  else if(e.key==='Enter'&&items[searchActiveIdx]){e.preventDefault();items[searchActiveIdx].click();}
+  else if(e.key==='Escape'){searchInput.blur();searchResults.classList.remove('open');}
+  items.forEach((it,i)=>it.classList.toggle('active',i===searchActiveIdx));
+});
+searchResults.addEventListener('click',e=>{
+  const r=e.target.closest('.search-result');if(!r)return;
+  const id=r.dataset.id;
+  selectPerson(id);searchResults.classList.remove('open');searchInput.value='';
+  const p=peopleById(id);if(p){
+    canvasWrap.scrollLeft=p.x*view.scale+view.offsetX-canvasWrap.clientWidth/2;
+    canvasWrap.scrollTop=p.y*view.scale+view.offsetY-canvasWrap.clientHeight/2;
+  }
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.search-wrap'))searchResults.classList.remove('open');
+});
+
+//=================================================================
+// TOOLBAR
+//=================================================================
+document.getElementById('addPersonBtn').addEventListener('click',()=>openPersonModal('+ Yeni Kişi'));
+document.getElementById('undoBtn').addEventListener('click',undo);
+document.getElementById('redoBtn').addEventListener('click',redo);
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  if(state.people.length>0&&!confirm('Tüm ağaç silinsin mi? Geri alınamaz.'))return;
+  pushHistory();
+  state={people:[],unions:[],families:[],nextId:1};selectedId=null;saveState();renderAll();
+});
+document.getElementById('rearrangeBtn').addEventListener('click',autoArrange);
+document.getElementById('exportJsonBtn').addEventListener('click',()=>{
+  const j=JSON.stringify(state,null,2);
+  const b=new Blob([j],{type:'application/json'});
+  const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=`aile-agaci-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  URL.revokeObjectURL(u);
+});
+document.getElementById('exportPngBtn').addEventListener('click',exportAsPng);
+document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.people&&Array.isArray(d.people)){
+        if(state.people.length>0&&!confirm('Mevcut ağaç değişsin mi?'))return;
+        pushHistory();
+        state={people:d.people||[],unions:d.unions||[],families:d.families||[],nextId:d.nextId||1};
+        selectedId=null;saveState();renderAll();
+      }else alert('Geçersiz dosya.');
+    }catch(err){alert('JSON okunamadı: '+err.message);}
+  };
+  r.readAsText(f);e.target.value='';
+});
+document.getElementById('loadSampleBtn').addEventListener('click',loadSample);
+document.getElementById('zoomInBtn').addEventListener('click',()=>setZoom(view.scale*1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2));
+document.getElementById('zoomOutBtn').addEventListener('click',()=>setZoom(view.scale/1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2));
+document.getElementById('zoomFitBtn').addEventListener('click',fitToView);
+document.getElementById('sidebarToggle').addEventListener('click',()=>{
+  const sb=document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  document.getElementById('sidebarToggle').textContent=sb.classList.contains('collapsed')?'›':'‹';
+});
+
+// Stats
+function showStats(){
+  const n=state.people.length;
+  const dead=state.people.filter(p=>p.dead).length;
+  const m=state.unions.filter(u=>u.type==='married').length;
+  const div=state.unions.filter(u=>u.type==='divorced').length;
+  const withDates=state.people.filter(p=>p.dob);
+  const ages=state.people.filter(p=>p.dob&&p.dod).map(p=>p.dod-p.dob);
+  const avgAge=ages.length?Math.round(ages.reduce((s,a)=>s+a,0)/ages.length):0;
+  const oldest=state.people.filter(p=>p.dob&&!p.dead).reduce((a,b)=>(a&&a.dob<b.dob)?a:b,null);
+  const youngest=state.people.filter(p=>p.dob).reduce((a,b)=>(a&&a.dob>b.dob)?a:b,null);
+  document.getElementById('statsContent').innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="num">${n}</div><div class="label">Toplam kişi</div></div>
+      <div class="stat-card"><div class="num">${m}</div><div class="label">Evlilik</div></div>
+      <div class="stat-card"><div class="num">${div}</div><div class="label">Boşanma</div></div>
+      <div class="stat-card"><div class="num">${dead}</div><div class="label">Vefat eden</div></div>
+      <div class="stat-card"><div class="num">${state.families.length}</div><div class="label">Ebeveyn-çocuk bağı</div></div>
+      <div class="stat-card"><div class="num">${avgAge||'—'}</div><div class="label">Ort. ömür (vefat edenlerde)</div></div>
+    </div>
+    ${oldest?`<div style="margin-top:14px;padding:10px;background:rgba(95,168,245,.1);border-radius:8px;font-size:12.5px">En büyük yaşayan: <b>${escapeHtml(oldest.name)}</b> (${oldest.dob})</div>`:''}
+    ${youngest?`<div style="margin-top:6px;padding:10px;background:rgba(102,214,155,.1);border-radius:8px;font-size:12.5px">En genç: <b>${escapeHtml(youngest.name)}</b> (${youngest.dob})</div>`:''}
+  `;
+  document.getElementById('statsModal').classList.add('open');
+}
+document.getElementById('statsBtn').addEventListener('click',showStats);
+document.getElementById('statsCloseBtn').addEventListener('click',()=>document.getElementById('statsModal').classList.remove('open'));
+document.getElementById('helpBtn').addEventListener('click',()=>document.getElementById('helpModal').classList.add('open'));
+document.getElementById('helpCloseBtn').addEventListener('click',()=>document.getElementById('helpModal').classList.remove('open'));
+
+// Welcome
+document.getElementById('welcomeStartBtn').addEventListener('click',()=>{
+  document.getElementById('welcomeModal').classList.remove('open');
+  localStorage.setItem(WELCOME_KEY,'1');
+});
+document.getElementById('welcomeSampleBtn').addEventListener('click',()=>{
+  document.getElementById('welcomeModal').classList.remove('open');
+  localStorage.setItem(WELCOME_KEY,'1');loadSample();
+});
+
+//=================================================================
+// PNG EXPORT (custom canvas renderer)
+//=================================================================
+async function exportAsPng(){
+  if(!state.people.length){alert('Ağaç boş!');return;}
+  const pad=60;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  state.people.forEach(p=>{
+    minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);
+    maxX=Math.max(maxX,p.x+BOX_W);maxY=Math.max(maxY,p.y+AVATAR_SZ+50);
+  });
+  const W=maxX-minX+pad*2,H=maxY-minY+pad*2;
+  const c=document.createElement('canvas');
+  const dpr=2;c.width=W*dpr;c.height=H*dpr;
+  const ctx=c.getContext('2d');ctx.scale(dpr,dpr);
+  // Background
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#131730');bg.addColorStop(1,'#0a0c1a');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  ctx.translate(-minX+pad,-minY+pad);
+  // Load photos
+  const photos={};
+  await Promise.all(state.people.filter(p=>p.photo).map(p=>new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{photos[p.id]=img;res();};
+    img.onerror=()=>res();
+    img.src=p.photo;
+  })));
+  // Draw descent lines
+  const grp={};
+  state.families.forEach(f=>{
+    const k=[...f.parents].sort().join('|');
+    if(!grp[k])grp[k]={parents:f.parents,children:[]};
+    grp[k].children.push({id:f.child,type:f.type,customLabel:f.customLabel});
+  });
+  let bi=0;
+  Object.values(grp).forEach(g=>{
+    let oX,oY;
+    if(g.parents.length===2){
+      const p1=peopleById(g.parents[0]),p2=peopleById(g.parents[1]);
+      if(!p1||!p2)return;
+      oX=(cx(p1)+cx(p2))/2;oY=(cy(p1)+cy(p2))/2;
+    }else{
+      const p1=peopleById(g.parents[0]);if(!p1)return;
+      oX=cx(p1);oY=cb(p1);
+    }
+    const kids=g.children.map(c=>({...c,person:peopleById(c.id)})).filter(x=>x.person);
+    if(!kids.length)return;
+    const childY=Math.min(...kids.map(c=>c.person.y));
+    const off=(bi%6)*10;bi++;
+    let busY=childY-36-off;if(busY<=oY+20)busY=oY+30+off;
+    kids.forEach(c=>{
+      ctx.strokeStyle=c.type==='adopted'?'#50c878':(c.type==='surrogate'?'#b577da':(c.type==='custom'?'#fdcb6e':getCoupleColor(g.parents)));
+      ctx.lineWidth=2.3;
+      ctx.setLineDash(c.type==='adopted'?[6,4]:(c.type==='surrogate'?[3,4]:(c.type==='custom'?[4,3]:[])));
+      const cxx=cx(c.person);
+      ctx.beginPath();
+      ctx.moveTo(oX,oY+8);ctx.lineTo(oX,busY);ctx.lineTo(cxx,busY);ctx.lineTo(cxx,c.person.y);
+      ctx.stroke();
+    });
+  });
+  ctx.setLineDash([]);
+  // Draw union lines
+  state.unions.forEach(u=>{
+    const a=peopleById(u.a),b=peopleById(u.b);if(!a||!b)return;
+    let x1=cx(a),x2=cx(b);if(x1>x2)[x1,x2]=[x2,x1];
+    const yM=(cy(a)+cy(b))/2;
+    ctx.strokeStyle=u.type==='divorced'?'#ff8c42':(u.type==='partner'?'#5fd6ff':(u.type==='samesex'?'#f4d03f':(u.type==='custom'?'#b577da':'#fff')));
+    ctx.lineWidth=3;ctx.setLineDash(u.type==='divorced'?[8,5]:(u.type==='partner'?[2,5]:(u.type==='samesex'?[5,4]:(u.type==='custom'?[6,3]:[]))));
+    ctx.beginPath();ctx.moveTo(x1,yM);ctx.lineTo(x2,yM);ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  // Draw persons
+  state.people.forEach(p=>{
+    const cx_=p.x+BOX_W/2,cy_=p.y+AVATAR_SZ/2;
+    // Avatar
+    ctx.save();
+    ctx.beginPath();ctx.arc(cx_,cy_,40,0,Math.PI*2);ctx.clip();
+    if(photos[p.id]){
+      ctx.drawImage(photos[p.id],cx_-40,cy_-40,80,80);
+    }else{
+      const fc=getFamilyColor(p.fam);
+      const grd=ctx.createLinearGradient(cx_-40,cy_-40,cx_+40,cy_+40);
+      grd.addColorStop(0,fc);grd.addColorStop(1,'#222');
+      ctx.fillStyle=grd;ctx.fillRect(cx_-40,cy_-40,80,80);
+      ctx.fillStyle='#fff';ctx.font='bold 26px Segoe UI,sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(initials(p.name),cx_,cy_);
+    }
+    ctx.restore();
+    // Border
+    ctx.beginPath();ctx.arc(cx_,cy_,40,0,Math.PI*2);
+    ctx.strokeStyle=p.gender==='male'?'#b3d4ff':(p.gender==='female'?'#ffc4c4':(p.gender==='nb'?'#ffe066':'#c0c8d3'));
+    ctx.lineWidth=3;
+    if(p.gender==='nb')ctx.setLineDash([4,3]);
+    ctx.stroke();ctx.setLineDash([]);
+    // Dead badge
+    if(p.dead){
+      ctx.beginPath();ctx.arc(cx_+30,cy_-30,11,0,Math.PI*2);
+      ctx.fillStyle='#4b4b4b';ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#f0c0c0';ctx.font='bold 11px sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('✝',cx_+30,cy_-30);
+    }
+    // Name
+    ctx.fillStyle='#f0f3fa';ctx.font='bold 12px Segoe UI,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(p.name,cx_,p.y+88);
+    // Dates
+    if(p.dob||p.dod){
+      const yr=p.dod?`${p.dob||'?'} – ${p.dod}`:`${p.dob||''} –`;
+      ctx.fillStyle='#98a0b6';ctx.font='10px Segoe UI,sans-serif';
+      ctx.fillText(yr,cx_,p.y+103);
+    }
+  });
+  // Title
+  ctx.fillStyle='#5fa8f5';ctx.font='bold 18px Segoe UI,sans-serif';
+  ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText('🌳 Aile Ağacı',minX-pad+20,minY-pad+20);
+  ctx.fillStyle='#888';ctx.font='11px Segoe UI,sans-serif';
+  ctx.fillText(new Date().toLocaleDateString('tr-TR'),minX-pad+20,minY-pad+44);
+  // Download
+  const link=document.createElement('a');
+  link.download=`aile-agaci-${Date.now()}.png`;
+  link.href=c.toDataURL('image/png');link.click();
+}
+
+//=================================================================
+// AUTO ARRANGE
+//=================================================================
+// Bottom-up (post-order DFS) ağaç düzeni algoritması:
+// 1) Önce her alt-ağacın gerektirdiği toplam genişliği yapraklardan başlayarak hesaplar
+// 2) Sonra her ebeveyni çocuklarının toplam genişliğinin tam ortasına yerleştirir
+// Bu sayede 8 çocuklu bir dal ile 1 çocuklu dal asla iç içe girmez.
+function autoArrange(silent){
+  if(!state.people.length)return;
+  if(!silent)pushHistory();
+
+  const COUPLE_W=250;     // bir çiftin (iki avatar yan yana) toplam slot genişliği
+  const SINGLE_W=140;     // bekar / tek kişi slot genişliği
+  const SIBLING_GAP=30;   // kardeş alt-ağaçları arası yatay boşluk
+  const GEN_H=380;        // nesiller arası dikey mesafe
+  const START_X=80;
+  const START_Y=80;
+
+  // ===== 1) Kök kişileri tespit et =====
+  // Bir "kök ana" kişi: ebeveyni olmayan ve ya kendisi soyağacının başı, ya da eşi de köktür.
+  // "Yalnızca eş" olanlar (ebeveyni yok ama eşinin ebeveyni var) kök sayılmaz, eşi pozisyonlanırken yerleşirler.
+  const processed=new Set();
+  const rootMains=[];
+  state.people.forEach(p=>{
+    if(processed.has(p.id))return;
+    if(getParentsOf(p.id).length>0)return;
+    const spouses=getSpousesOf(p.id);
+    const spouseWithParents=spouses.find(sid=>getParentsOf(sid).length>0);
+    if(spouseWithParents){processed.add(p.id);return;} // yalnızca eş; partneri yerleştirirken pozisyonlanacak
+    const rootSpouse=spouses.find(sid=>getParentsOf(sid).length===0&&!processed.has(sid));
+    if(rootSpouse){
+      processed.add(p.id);processed.add(rootSpouse);
+      // Ana taraf çocukları olan kişi
+      const pHasKids=getChildrenOf(p.id).length>0;
+      rootMains.push(pHasKids?p.id:(getChildrenOf(rootSpouse).length>0?rootSpouse:p.id));
+    }else{
+      processed.add(p.id);
+      rootMains.push(p.id);
+    }
+  });
+
+  // ===== 2) Alt-ağaç genişliklerini bottom-up hesapla =====
+  const widthCache=new Map();
+  const visiting=new Set();
+  function subtreeWidth(personId){
+    if(widthCache.has(personId))return widthCache.get(personId);
+    if(visiting.has(personId))return SINGLE_W; // döngü koruması
+    visiting.add(personId);
+    const spouses=getSpousesOf(personId);
+    const ownWidth=spouses.length>0?COUPLE_W:SINGLE_W;
+    const childIds=getChildrenOf(personId);
+    let childrenTotal=0;
+    childIds.forEach((cid,i)=>{
+      if(i>0)childrenTotal+=SIBLING_GAP;
+      childrenTotal+=subtreeWidth(cid);
+    });
+    const w=Math.max(ownWidth,childrenTotal);
+    widthCache.set(personId,w);
+    visiting.delete(personId);
+    return w;
+  }
+  rootMains.forEach(subtreeWidth);
+
+  // ===== 3) Top-down pozisyon ataması (genişlikler bilindiği için artık iç içe giremez) =====
+  const placedIds=new Set();
+  function positionSubtree(personId,leftX,y){
+    if(placedIds.has(personId))return;
+    placedIds.add(personId);
+    const w=widthCache.get(personId)||SINGLE_W;
+    const centerX=leftX+w/2;
+    const person=peopleById(personId);
+    const spouses=getSpousesOf(personId);
+    const spouseToShow=spouses.find(sid=>!placedIds.has(sid));
+    if(spouseToShow){
+      placedIds.add(spouseToShow);
+      const spouse=peopleById(spouseToShow);
+      // Soydan gelen tarafı sol, "dışarıdan" eş (?) sağa koy
+      const pIsDesc=getParentsOf(personId).length>0;
+      const sIsDesc=getParentsOf(spouseToShow).length>0;
+      let leftP,rightP;
+      if(pIsDesc&&!sIsDesc){leftP=person;rightP=spouse;}
+      else if(!pIsDesc&&sIsDesc){leftP=spouse;rightP=person;}
+      else{leftP=person;rightP=spouse;}
+      leftP.x=centerX-110;leftP.y=y;
+      rightP.x=centerX;rightP.y=y;
+    }else{
+      person.x=centerX-55;person.y=y;
+    }
+    const childIds=getChildrenOf(personId);
+    if(!childIds.length)return;
+    const childWs=childIds.map(cid=>widthCache.get(cid)||SINGLE_W);
+    let totalChildren=0;
+    childWs.forEach((cw,i)=>{
+      if(i>0)totalChildren+=SIBLING_GAP;
+      totalChildren+=cw;
+    });
+    let childX=centerX-totalChildren/2;
+    childIds.forEach((cid,i)=>{
+      if(i>0)childX+=SIBLING_GAP;
+      positionSubtree(cid,childX,y+GEN_H);
+      childX+=childWs[i];
+    });
+  }
+
+  // ===== 4) Kökleri yan yana yerleştir =====
+  let curX=START_X;
+  rootMains.forEach(rid=>{
+    const w=widthCache.get(rid)||SINGLE_W;
+    positionSubtree(rid,curX,START_Y);
+    curX+=w+100;
+  });
+
+  // Yetim kişileri (ağaçtan kopuk) sağ kenara koy
+  state.people.forEach(p=>{
+    if(!placedIds.has(p.id)){
+      p.x=curX;p.y=START_Y;
+      placedIds.add(p.id);
+      curX+=SINGLE_W+SIBLING_GAP;
+    }
+  });
+
+  saveState();renderAll();
+  setTimeout(fitToView,200);
+}
+
+//=================================================================
+// SAMPLE — Demo amaçlı kurgusal aile (Yılmaz ailesi)
+//=================================================================
+function loadSample(silent){
+  if(!silent&&state.people.length>0&&!confirm('Mevcut ağaç silinip örnek aile yüklensin mi?'))return;
+  if(!silent)pushHistory();
+  state={people:[],unions:[],families:[],nextId:1};selectedId=null;
+  suppressHistory=true;
+
+  function P(d){return addPerson(d);}
+
+  // ===== G1: Büyük ebeveynler =====
+  const hasan=P({name:'Hasan Yılmaz',gender:'male',fam:'demir',dob:1925,dod:2015,desc:'Ailenin büyük dedesi. Emekli demiryolu işçisi.',occupation:'Demiryolu işçisi',birthPlace:'Sivas'});
+  hasan.dead=true;
+  const emine=P({name:'Emine Yılmaz',gender:'female',fam:'demir',dob:1930,desc:'Üç çocuk büyütmüş emekli öğretmen.',occupation:'Öğretmen'});
+  addUnion(hasan.id,emine.id,'married');
+
+  // ===== G2: Üç çocuk + eşleri =====
+  const mustafa=P({name:'Mustafa Yılmaz',gender:'male',fam:'demir',dob:1955,desc:'Mühendis. İki çocuk babası.',occupation:'İnşaat mühendisi'});
+  const hatice=P({name:'Hatice Demir',gender:'female',fam:'outsider',dob:1958,desc:'Mustafa\'nın eşi.',occupation:'Hemşire'});
+  addUnion(mustafa.id,hatice.id,'married');
+  addFamily([hasan.id,emine.id],mustafa.id,'bio');
+
+  const ayse=P({name:'Ayşe Yılmaz',gender:'female',fam:'demir',dob:1960,desc:'Doktor.',occupation:'Kardiyolog'});
+  const salih=P({name:'Salih Çelik',gender:'male',fam:'outsider',dob:1957,desc:'Ayşe\'nin eşi.',occupation:'Avukat'});
+  addUnion(ayse.id,salih.id,'married');
+  addFamily([hasan.id,emine.id],ayse.id,'bio');
+
+  const kerem=P({name:'Kerem Yılmaz',gender:'male',fam:'demir',dob:1963,desc:'Müzisyen. Hiç evlenmedi.',occupation:'Müzisyen'});
+  addFamily([hasan.id,emine.id],kerem.id,'bio');
+
+  // ===== G3: Torunlar =====
+  const selin=P({name:'Selin Yılmaz',gender:'female',fam:'demir',dob:1985,desc:'Mustafa & Hatice\'nin kızı.',occupation:'Tasarımcı'});
+  addFamily([mustafa.id,hatice.id],selin.id,'bio');
+  const eren=P({name:'Eren Yılmaz',gender:'male',fam:'demir',dob:1988,desc:'Mustafa & Hatice\'nin oğlu.',occupation:'Yazılımcı'});
+  addFamily([mustafa.id,hatice.id],eren.id,'bio');
+  const defne=P({name:'Defne Çelik',gender:'female',fam:'demir',dob:1990,desc:'Ayşe & Salih\'in kızı.',occupation:'Akademisyen'});
+  addFamily([ayse.id,salih.id],defne.id,'bio');
+
+  // Bottom-up algoritmayla yerleşim
+  autoArrange(true);
+  suppressHistory=false;
+}
+
+//=================================================================
+// KEYBOARD SHORTCUTS
+//=================================================================
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  const ctrl=e.ctrlKey||e.metaKey;
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+    selectPerson(null);searchResults.classList.remove('open');
+  }else if(ctrl&&e.key.toLowerCase()==='n'){e.preventDefault();openPersonModal('+ Yeni Kişi');}
+  else if(ctrl&&e.key.toLowerCase()==='f'){e.preventDefault();searchInput.focus();}
+  else if(ctrl&&e.key.toLowerCase()==='z'){e.preventDefault();undo();}
+  else if(ctrl&&(e.key.toLowerCase()==='y'||(e.key.toLowerCase()==='z'&&e.shiftKey))){e.preventDefault();redo();}
+  else if(ctrl&&e.key.toLowerCase()==='i'){e.preventDefault();showStats();}
+  else if(ctrl&&e.key.toLowerCase()==='e'){e.preventDefault();exportAsPng();}
+  else if(e.key==='Delete'&&selectedId){
+    if(confirm(`"${peopleById(selectedId).name}" silinsin mi?`)){deletePerson(selectedId);renderAll();}
+  }else if(e.key==='+'||e.key==='='){setZoom(view.scale*1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2);}
+  else if(e.key==='-'||e.key==='_'){setZoom(view.scale/1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2);}
+  else if(e.key==='0'){fitToView();}
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/')){document.getElementById('helpModal').classList.add('open');}
+});
+
+//=================================================================
+// INIT
+//=================================================================
+loadState();
+// İlk açılışta baba tarafı aile ağacını otomatik yükle (kullanıcı UI'dan girmiş gibi)
+const TREE_LOADED_KEY='paternal_family_tree_loaded_v1';
+const LAYOUT_FIXED_KEY='layout_bottom_up_applied_v1';
+if(!localStorage.getItem(TREE_LOADED_KEY)){
+  // Hiç yüklenmemiş — ağacı kur ve düzenle
+  loadSample(true);
+  localStorage.setItem(TREE_LOADED_KEY,'1');
+  localStorage.setItem(LAYOUT_FIXED_KEY,'1');
+  localStorage.setItem(WELCOME_KEY,'1'); // hoş geldin modalını da atla
+}else if(!localStorage.getItem(LAYOUT_FIXED_KEY)&&state.people.length>0){
+  // Mevcut veriler var ama yeni bottom-up algoritma uygulanmamış — bir kere uygula
+  suppressHistory=true;
+  autoArrange(true);
+  suppressHistory=false;
+  localStorage.setItem(LAYOUT_FIXED_KEY,'1');
+}
+renderAll();
+updateUndoRedoButtons();
+if(!localStorage.getItem(WELCOME_KEY)&&state.people.length===0){
+  document.getElementById('welcomeModal').classList.add('open');
+}
+</script>
+</body>
+</html>
