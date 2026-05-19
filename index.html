@@ -2641,7 +2641,8 @@ function autoArrange(silent){
 }
 
 //=================================================================
-// SAMPLE — Demo amaçlı kurgusal aile (Yılmaz ailesi)
+// SAMPLE — Demo amaçlı kurgusal aile (Yılmaz / Kaya ailesi)
+// Fotoğraflar examples/ klasöründen yüklenir (AI-generated yüzler — thispersondoesnotexist.com)
 //=================================================================
 function loadSample(silent){
   if(!silent&&state.people.length>0&&!confirm(t('confirmSampleOverwrite')))return;
@@ -2649,35 +2650,137 @@ function loadSample(silent){
   state={people:[],unions:[],families:[],nextId:1};selectedId=null;
   suppressHistory=true;
 
-  function P(d){return addPerson(d);}
+  function P(d){const p=addPerson(d);if(d.dead)p.dead=true;return p;}
 
-  // ===== G1: Büyük ebeveynler =====
-  const hasan=P({name:'Hasan Yılmaz',gender:'male',fam:'demir',dob:1925,dod:2015,desc:'Ailenin büyük dedesi. Emekli demiryolu işçisi.',occupation:'Demiryolu işçisi',birthPlace:'Sivas'});
-  hasan.dead=true;
-  const emine=P({name:'Emine Yılmaz',gender:'female',fam:'demir',dob:1930,desc:'Üç çocuk büyütmüş emekli öğretmen.',occupation:'Öğretmen'});
-  addUnion(hasan.id,emine.id,'married');
+  // ===== G1: Büyük ebeveynler (Mehmet & Ayşe) =====
+  const mehmet=P({
+    name:'Mehmet Yılmaz',gender:'male',fam:'demir',
+    dob:1945,dod:2020,dead:true,
+    photo:'examples/mehmet.jpg',
+    occupation:'Berber (emekli)',birthPlace:'Konya, Cihanbeyli',
+    desc:'Köyden Adana\'ya göç eden ailenin reisi. 45 yıl berberlik yaptı. Tarağını her gün titizlikle temizlerdi. 2018\'de torunu Ada doğduğunda "artık ölmem yakındır" dedi, gerçekten iki yıl sonra vefat etti.'
+  });
+  const ayse=P({
+    name:'Ayşe Yılmaz',gender:'female',fam:'demir',
+    dob:1948,
+    photo:'examples/ayse.jpg',
+    occupation:'Ev hanımı',birthPlace:'Aksaray',
+    desc:'Okuma yazma bilmez ama hesap-kitap onun parmaklarının ucunda. Üç çocuğunun ve dört torununun doğum saatlerini hala ezbere bilir. Mahallenin "tarif veren" kişisidir; yemek tariflerini sebzelerin renklerine göre anlatır.'
+  });
+  addUnion(mehmet.id,ayse.id,'married');
 
   // ===== G2: Üç çocuk + eşleri =====
-  const mustafa=P({name:'Mustafa Yılmaz',gender:'male',fam:'demir',dob:1955,desc:'Mühendis. İki çocuk babası.',occupation:'İnşaat mühendisi'});
-  const hatice=P({name:'Hatice Demir',gender:'female',fam:'outsider',dob:1958,desc:'Mustafa\'nın eşi.',occupation:'Hemşire'});
+  // Hasan + Fatma
+  const hasan=P({
+    name:'Hasan Yılmaz',gender:'male',fam:'demir',
+    dob:1970,
+    photo:'examples/hasan.jpg',
+    occupation:'İnşaat mühendisi',birthPlace:'Konya',
+    desc:'Ailenin en büyük çocuğu. 30 yıllık inşaat mühendisi. Adana\'da köprü, Bodrum\'da otel tasarladı. Tüm bilgisayar şifreleri "GazliKopru1987". Çocuklarıyla satranç oynar, kimisinde kasten kaybeder.'
+  });
+  const fatma=P({
+    name:'Fatma Yılmaz',gender:'female',fam:'outsider',
+    dob:1973,
+    photo:'examples/fatma.jpg',
+    occupation:'Çocuk doktoru',birthPlace:'İstanbul',
+    desc:'Doğum soyadı Demir. 30 yıldır aynı muayenehanede pediatri yapıyor. Sokakta tanıdığı "ayy benim hastam" dediği üç kuşak insan var şehirde. Hasan ile üniversitede tanışmışlar.'
+  });
+  addUnion(hasan.id,fatma.id,'married');
+  addFamily([mehmet.id,ayse.id],hasan.id,'bio');
+
+  // Zehra + İbrahim
+  const zehra=P({
+    name:'Zehra Yılmaz',gender:'female',fam:'demir',
+    dob:1973,
+    photo:'examples/zehra.jpg',
+    occupation:'Aile hekimi',birthPlace:'Konya',
+    desc:'Hasan\'ın üç yaş küçük kardeşi. Çankaya\'da aile hekimliği yapıyor. Tatildeyken bile telefon mesajına bakıp reçete yazabilir; ailenin yarısının ilaçları onun el yazısıyla.'
+  });
+  const ibrahim=P({
+    name:'İbrahim Kaya',gender:'male',fam:'outsider',
+    dob:1972,
+    photo:'examples/ibrahim.jpg',
+    occupation:'Restorasyon mimarı',birthPlace:'Bursa',
+    desc:'Eski camileri ve Osmanlı evlerini restore ediyor. 2023 Kahramanmaraş depreminden sonra gönüllü altı ay sahada çalıştı. Boş zamanlarında ahşap kaşık yontuyor.'
+  });
+  addUnion(zehra.id,ibrahim.id,'married');
+  addFamily([mehmet.id,ayse.id],zehra.id,'bio');
+
+  // Mustafa + Hatice
+  const mustafa=P({
+    name:'Mustafa Yılmaz',gender:'male',fam:'demir',
+    dob:1975,
+    photo:'examples/mustafa.jpg',
+    occupation:'Lise edebiyat öğretmeni',birthPlace:'Adana',
+    desc:'Ailenin şair-yazar tarafı. Üç şiir kitabı yayınladı, biri ödül aldı. Öğrencileri arasında lakabı "Edebiyat Mustafa". Sınıfta "şiir okur gibi konuşan" demekle bilinir.'
+  });
+  const hatice=P({
+    name:'Hatice Yılmaz',gender:'female',fam:'outsider',
+    dob:1978,
+    photo:'examples/hatice.jpg',
+    occupation:'Ameliyathane hemşiresi',birthPlace:'İzmir',
+    desc:'Doğum soyadı Şahin. Mustafa ile yüksek lisans hazırlık kursunda tanıştılar. 20 yıllık evlilik. Tatillerde Hatay\'da gönüllü saha hemşireliği yapıyorlar.'
+  });
   addUnion(mustafa.id,hatice.id,'married');
-  addFamily([hasan.id,emine.id],mustafa.id,'bio');
-
-  const ayse=P({name:'Ayşe Yılmaz',gender:'female',fam:'demir',dob:1960,desc:'Doktor.',occupation:'Kardiyolog'});
-  const salih=P({name:'Salih Çelik',gender:'male',fam:'outsider',dob:1957,desc:'Ayşe\'nin eşi.',occupation:'Avukat'});
-  addUnion(ayse.id,salih.id,'married');
-  addFamily([hasan.id,emine.id],ayse.id,'bio');
-
-  const kerem=P({name:'Kerem Yılmaz',gender:'male',fam:'demir',dob:1963,desc:'Müzisyen. Hiç evlenmedi.',occupation:'Müzisyen'});
-  addFamily([hasan.id,emine.id],kerem.id,'bio');
+  addFamily([mehmet.id,ayse.id],mustafa.id,'bio');
 
   // ===== G3: Torunlar =====
-  const selin=P({name:'Selin Yılmaz',gender:'female',fam:'demir',dob:1985,desc:'Mustafa & Hatice\'nin kızı.',occupation:'Tasarımcı'});
-  addFamily([mustafa.id,hatice.id],selin.id,'bio');
-  const eren=P({name:'Eren Yılmaz',gender:'male',fam:'demir',dob:1988,desc:'Mustafa & Hatice\'nin oğlu.',occupation:'Yazılımcı'});
-  addFamily([mustafa.id,hatice.id],eren.id,'bio');
-  const defne=P({name:'Defne Çelik',gender:'female',fam:'demir',dob:1990,desc:'Ayşe & Salih\'in kızı.',occupation:'Akademisyen'});
-  addFamily([ayse.id,salih.id],defne.id,'bio');
+  // Hasan + Fatma'nın çocukları
+  const selin=P({
+    name:'Selin Yılmaz',gender:'female',fam:'demir',
+    dob:1998,
+    photo:'examples/selin.jpg',
+    occupation:'Grafik tasarımcı',birthPlace:'Adana',
+    desc:'Üç yıldır kitap kapağı tasarımı yapıyor. "Bir gün Orhan Pamuk\'un kitabını tasarlayacağım" hayali kurar. Anneannesi Ayşe\'nin tariflerini Instagram\'da illüstrasyonla paylaşır, 40 bin takipçisi var.'
+  });
+  addFamily([hasan.id,fatma.id],selin.id,'bio');
+
+  const eren=P({
+    name:'Eren Yılmaz',gender:'male',fam:'demir',
+    dob:2002,
+    photo:'examples/eren.jpg',
+    occupation:'Yazılım geliştirici',birthPlace:'Adana',
+    desc:'Selin\'in dört yaş küçük kardeşi. Backend developer, şu sıralar "kahveyi hatırlayan ve hazırlayan robot" projesi üzerinde çalışıyor. Babası Hasan ile her cumartesi sabah kahvesi yapma yarışı yaparlar.'
+  });
+  addFamily([hasan.id,fatma.id],eren.id,'bio');
+
+  // Zehra + İbrahim'in çocukları
+  const berk=P({
+    name:'Berk Kaya',gender:'male',fam:'outsider',
+    dob:1995,
+    photo:'examples/berk.jpg',
+    occupation:'Anestezi uzmanı',birthPlace:'Bursa',
+    desc:'Tıp fakültesinde Pınar ile tanıştı. Anestezi uzmanı, hafta sonları yoga eğitmenliği yapar. Kayseri Erciyes Dağı\'na her yıl tırmanır.'
+  });
+  const pinar=P({
+    name:'Pınar Kaya',gender:'female',fam:'outsider',
+    dob:1996,
+    photo:'examples/pinar.jpg',
+    occupation:'Veteriner hekim',birthPlace:'Eskişehir',
+    desc:'Doğum soyadı Aydın. Bursa\'da sokak hayvanları için kâr amacı gütmeyen klinik kurdu. Berk ile altı yıllık evli, üç köpek bir kedi sahibi.'
+  });
+  addUnion(berk.id,pinar.id,'married');
+  addFamily([zehra.id,ibrahim.id],berk.id,'bio');
+
+  // Mustafa + Hatice'nin çocuğu
+  const defne=P({
+    name:'Defne Yılmaz',gender:'female',fam:'demir',
+    dob:1999,
+    photo:'examples/defne.jpg',
+    occupation:'Akademisyen (Karşılaştırmalı Edebiyat)',birthPlace:'Ankara',
+    desc:'Boğaziçi Üniversitesi\'nde doktora yapıyor. Beş dil konuşur: Türkçe, İngilizce, Fransızca, İspanyolca ve Almanca. Babası Mustafa\'nın şiir kitaplarının ilk okuyucusu hep o olur.'
+  });
+  addFamily([mustafa.id,hatice.id],defne.id,'bio');
+
+  // ===== G4: Berk + Pınar'ın kızı =====
+  const ada=P({
+    name:'Ada Kaya',gender:'female',fam:'outsider',
+    dob:2020,
+    photo:'examples/ada.jpg',
+    occupation:'Anaokulu öğrencisi',birthPlace:'Bursa',
+    desc:'Berk ve Pınar\'ın kızı, ailenin minik yıldızı. Anaokulunda piyano kursuna gidiyor. Babaannesi Ayşe\'nin dizinde uyumayı sever. Her bahar büyük dedesi Mehmet\'in mezarına papatya götürür.'
+  });
+  addFamily([berk.id,pinar.id],ada.id,'bio');
 
   // Bottom-up algoritmayla yerleşim
   autoArrange(true);
