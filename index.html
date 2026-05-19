@@ -42,7 +42,7 @@ header{background:rgba(0,0,0,.5);border-bottom:1px solid rgba(255,255,255,.1);pa
 /* Canvas + overlays kapsayıcı: scroll yapmaz, böylece overlay'lar sabit kalır */
 .canvas-area{flex:1;position:relative;display:flex;min-width:0;min-height:0}
 
-.canvas-wrap{flex:1;position:relative;overflow:auto;background:radial-gradient(ellipse at top,rgba(95,168,245,.04),transparent 70%),linear-gradient(180deg,#131730,#0a0c1a);cursor:grab}
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at top,rgba(95,168,245,.04),transparent 70%),linear-gradient(180deg,#131730,#0a0c1a);cursor:grab}
 .canvas-wrap.panning{cursor:grabbing}
 .canvas{position:relative;transform-origin:0 0;min-width:1400px;min-height:900px}
 
@@ -1236,10 +1236,12 @@ document.getElementById('minimap').addEventListener('click',e=>{
   const rect=c.getBoundingClientRect();
   const px=(e.clientX-rect.left)/rect.width;
   const py=(e.clientY-rect.top)/rect.height;
-  const tx=px*(parseInt(canvasEl.style.width)||1400);
-  const ty=py*(parseInt(canvasEl.style.height)||900);
-  canvasWrap.scrollLeft=tx*view.scale+view.offsetX-canvasWrap.clientWidth/2;
-  canvasWrap.scrollTop=ty*view.scale+view.offsetY-canvasWrap.clientHeight/2;
+  const cw=parseInt(canvasEl.style.width)||1400;
+  const ch=parseInt(canvasEl.style.height)||900;
+  // Tıklanan canvas pozisyonunu viewport merkezine yerleştir (hem yatay hem dikey)
+  view.offsetX=canvasWrap.clientWidth/2 - px*cw*view.scale;
+  view.offsetY=canvasWrap.clientHeight/2 - py*ch*view.scale;
+  applyTransform();
 });
 
 canvasWrap.addEventListener('scroll',updateMinimap);
@@ -1434,10 +1436,10 @@ function setupPersonInteractions(el,p){
       // Drop on another person → connect modal
       const targetId=dropTarget.dataset.id;
       clearDropTarget();
-      // Pozisyonu eski haline döndür (sürükleme bağlanmaya dönüşüyor, taşınmaya değil)
-      p.x=ox;p.y=oy;
-      el.style.left=p.x+'px';el.style.top=p.y+'px';
-      debouncedRelink();
+      // Pozisyonu KORUYORUZ — kullanıcı cancel'a basarsa bıraktığı yerde kalsın
+      // Eski pozisyonu kaydet, bağlantı seçilirse oraya geri dönülecek
+      connectOrigPos={sourceId:p.id,x:ox,y:oy};
+      saveState();renderAll();
       openConnectModal(p.id,targetId);
     }else if(moved){
       saveState();renderAll();
@@ -1491,18 +1493,19 @@ canvasWrap.addEventListener('click',e=>{
   }
 });
 
-// Pan with middle button or empty drag
+// Pan with middle button or empty drag — TRANSFORM tabanlı (canvas boyutundan bağımsız, her zaman çalışır)
 let panData=null;
 canvasWrap.addEventListener('mousedown',e=>{
   if(e.button===1||(e.button===0&&(e.target===canvasWrap||e.target===canvasEl||e.target===svgEl))){
-    panData={x:e.clientX,y:e.clientY,sl:canvasWrap.scrollLeft,st:canvasWrap.scrollTop};
+    panData={x:e.clientX,y:e.clientY,ox:view.offsetX,oy:view.offsetY};
     canvasWrap.classList.add('panning');e.preventDefault();
   }
 });
 document.addEventListener('mousemove',e=>{
   if(!panData)return;
-  canvasWrap.scrollLeft=panData.sl-(e.clientX-panData.x);
-  canvasWrap.scrollTop=panData.st-(e.clientY-panData.y);
+  view.offsetX=panData.ox+(e.clientX-panData.x);
+  view.offsetY=panData.oy+(e.clientY-panData.y);
+  applyTransform();
 });
 document.addEventListener('mouseup',()=>{if(panData){panData=null;canvasWrap.classList.remove('panning');}});
 
@@ -1733,6 +1736,8 @@ parentForm.addEventListener('submit',e=>{
 //=================================================================
 const connectModal=document.getElementById('connectModal');
 let connectSourceId=null,connectTargetId=null;
+// Drag-to-connect sırasında kaynağın orijinal pozisyonu (bağlantı seçilirse geri dönmek için)
+let connectOrigPos=null;
 
 function openConnectModal(sourceId,targetId){
   connectSourceId=sourceId;connectTargetId=targetId;
@@ -1783,9 +1788,19 @@ document.getElementById('connectCustomCancelBtn').addEventListener('click',()=>{
   document.getElementById('connectCustomGroup').style.display='none';
   document.getElementById('connectMainActions').style.display='flex';
 });
-document.getElementById('connectCancelBtn').addEventListener('click',()=>connectModal.classList.remove('open'));
+document.getElementById('connectCancelBtn').addEventListener('click',()=>{
+  // Cancel: node bıraktığı yerde kalır, orijinal pozisyon kaydını sadece sıfırla
+  connectOrigPos=null;
+  connectModal.classList.remove('open');
+});
 
 function applyConnection(sourceId,targetId,rel,customLabel){
+  // Bağlantı uygulanıyorsa, kaynağı orijinal pozisyonuna döndür (hedefin üstünde kalmasın)
+  if(connectOrigPos&&connectOrigPos.sourceId===sourceId){
+    const src=peopleById(sourceId);
+    if(src){src.x=connectOrigPos.x;src.y=connectOrigPos.y;}
+    connectOrigPos=null;
+  }
   if(rel==='married'||rel==='divorced'||rel==='partner'||rel==='samesex'||rel==='custom'){
     addUnion(sourceId,targetId,rel,customLabel);
   }else if(rel==='child-of-source'){
