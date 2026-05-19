@@ -6,7 +6,7 @@
 <title>Aile Ağacı Oluşturucu</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:linear-gradient(135deg,#1a1f3a,#0d0d1a);color:#e6e9f2;font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden}
+html,body{margin:0;padding:0;background:linear-gradient(135deg,#1a1f3a,#0d0d1a);color:#e6e9f2;font-family:'Segoe UI',system-ui,sans-serif;height:100vh;height:100dvh;overflow:hidden}
 .app{display:flex;flex-direction:column;height:100vh}
 
 /* ===== HEADER ===== */
@@ -220,14 +220,54 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 .shift-hint{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#ffe066;color:#000;padding:6px 14px;border-radius:20px;font-size:11.5px;font-weight:700;display:none;z-index:200;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
 .shift-hint.show{display:block}
 
-/* Responsive */
+/* Touch optimizasyonu — pinch zoom ve drag için browser default davranışlarını engelle */
+.canvas-wrap,.canvas,.person{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* Responsive — mobil */
 @media (max-width:768px){
-  .toolbar{gap:3px}
-  .btn{padding:5px 8px;font-size:11px}
+  .toolbar{gap:4px}
+  .btn{padding:8px 11px;font-size:12px;min-height:36px}
+  .btn.icon{min-width:36px;padding:8px}
+  .btn.small{min-height:26px;padding:4px 8px}
   .brand{font-size:13px}
-  .search-wrap{max-width:140px}
-  .sidebar{width:280px}
+  .search-wrap{max-width:160px}
   .minimap{display:none}
+  /* iOS form zoom önleyicisi (font<16px olduğunda iOS odaklanınca zoom yapar) */
+  input,select,textarea{font-size:16px!important}
+  /* Sidebar drawer olarak slide-in (mobilde başlangıçta collapsed) */
+  .sidebar{
+    position:absolute;right:0;top:0;bottom:0;
+    width:320px;max-width:88vw;z-index:100;
+    transform:translateX(0);
+    box-shadow:-8px 0 24px rgba(0,0,0,.5);
+    transition:transform .3s;
+  }
+  .sidebar.collapsed{transform:translateX(100%);width:320px;max-width:88vw}
+  .sidebar-toggle{z-index:99}
+  /* Modal full-width */
+  .modal{width:95vw!important;max-width:95vw}
+  .modal.wide{width:95vw!important}
+  /* Quick + butonları her zaman görünür (mobilde hover yok) */
+  .quick-actions{opacity:1!important}
+  /* Person hover hint'leri pasif (tap-tabanlıyız) */
+  .person:hover{transform:none}
+}
+
+/* Touch cihazlar için (hover olmayan) — quick + butonları görünür yap */
+@media (hover:none) and (pointer:coarse){
+  .quick-actions{opacity:.9}
+  .quick-btn{width:30px;height:30px;font-size:16px} /* daha büyük dokunma hedefi */
+}
+
+/* Çok dar ekran (≤480px): tek sütun grid'ler */
+@media (max-width:480px){
+  .welcome-features{grid-template-columns:1fr}
+  .connect-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .shortcuts-list{grid-template-columns:1fr}
+  .form-row{flex-direction:column;gap:0}
+  header{padding:8px 10px;gap:6px}
+  .brand{font-size:12px}
 }
 
 @media print{
@@ -1377,33 +1417,76 @@ function applyFocus(id){
 function setupPersonInteractions(el,p){
   let dragging=false,moved=false,sx,sy,ox,oy;
   let dropTarget=null;
+  let longPressTimer=null;
+  let activePointerId=null;
   const shiftHint=document.getElementById('shiftHint');
 
   function clearDropTarget(){
     if(dropTarget){dropTarget.classList.remove('drop-target');dropTarget=null;}
   }
 
-  el.addEventListener('mousedown',e=>{
-    if(e.button!==0||e.target.closest('.quick-btn'))return;
-    dragging=true;moved=false;sx=e.clientX;sy=e.clientY;ox=p.x;oy=p.y;
+  function endDrag(e){
+    if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+    if(!dragging)return;
+    dragging=false;
+    el.classList.remove('dragging');
+    shiftHint.classList.remove('show');
+    try{el.releasePointerCapture(e.pointerId);}catch(_){}
+    activePointerId=null;
+
+    if(dropTarget&&moved){
+      const targetId=dropTarget.dataset.id;
+      clearDropTarget();
+      // Pozisyonu KORUYORUZ — cancel'da bıraktığı yerde kalsın
+      connectOrigPos={sourceId:p.id,x:ox,y:oy};
+      saveState();renderAll();
+      openConnectModal(p.id,targetId);
+    }else if(moved){
+      saveState();renderAll();
+    }
+    clearDropTarget();
+  }
+
+  // POINTER events: hem mouse hem touch hem pen için ortak API
+  el.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    if(e.target.closest('.quick-btn'))return;
+    if(activePointerId!==null)return; // tek seferde tek pointer
+
+    dragging=true;moved=false;
+    sx=e.clientX;sy=e.clientY;ox=p.x;oy=p.y;
     dropTarget=null;
-    el.classList.add('dragging');e.preventDefault();
+    activePointerId=e.pointerId;
+    el.classList.add('dragging');
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+
+    // Touch için long-press = context menu
+    if(e.pointerType==='touch'){
+      longPressTimer=setTimeout(()=>{
+        if(!moved&&dragging){
+          dragging=false;
+          el.classList.remove('dragging');
+          try{el.releasePointerCapture(e.pointerId);}catch(_){}
+          activePointerId=null;
+          selectPerson(p.id);
+          showContextMenu(sx,sy,p.id);
+        }
+      },500);
+    }
+    e.preventDefault();
   });
 
-  document.addEventListener('mousemove',e=>{
-    if(!dragging)return;
+  el.addEventListener('pointermove',e=>{
+    if(!dragging||e.pointerId!==activePointerId)return;
     let dx=(e.clientX-sx)/view.scale,dy=(e.clientY-sy)/view.scale;
-    if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
+    if(Math.abs(e.clientX-sx)>5||Math.abs(e.clientY-sy)>5){
+      moved=true;
+      if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+    }
 
-    // Shift+drag: tek eksen kilit
     if(e.shiftKey&&moved){
-      if(Math.abs(dx)>Math.abs(dy)){
-        dy=0;
-        shiftHint.textContent=t('shiftHorizontal');
-      }else{
-        dx=0;
-        shiftHint.textContent=t('shiftVertical');
-      }
+      if(Math.abs(dx)>Math.abs(dy)){dy=0;shiftHint.textContent=t('shiftHorizontal');}
+      else{dx=0;shiftHint.textContent=t('shiftVertical');}
       shiftHint.classList.add('show');
     }else{
       shiftHint.classList.remove('show');
@@ -1412,48 +1495,32 @@ function setupPersonInteractions(el,p){
     p.x=Math.max(0,ox+dx);p.y=Math.max(0,oy+dy);
     el.style.left=p.x+'px';el.style.top=p.y+'px';
 
-    // Drag-to-connect: altındaki .person'u tespit et
     el.style.pointerEvents='none';
     const below=document.elementFromPoint(e.clientX,e.clientY);
     el.style.pointerEvents='';
     const tg=below?below.closest('.person'):null;
     if(tg&&tg!==el&&tg.dataset.id!==p.id){
       if(dropTarget!==tg){clearDropTarget();dropTarget=tg;dropTarget.classList.add('drop-target');dropTarget.setAttribute('data-drop-hint',t('dropConnect'));}
-    }else{
-      clearDropTarget();
-    }
+    }else{clearDropTarget();}
 
     if(moved)debouncedRelink();
   });
 
-  document.addEventListener('mouseup',()=>{
-    if(!dragging)return;
-    dragging=false;
-    el.classList.remove('dragging');
-    shiftHint.classList.remove('show');
+  el.addEventListener('pointerup',endDrag);
+  el.addEventListener('pointercancel',endDrag);
 
-    if(dropTarget&&moved){
-      // Drop on another person → connect modal
-      const targetId=dropTarget.dataset.id;
-      clearDropTarget();
-      // Pozisyonu KORUYORUZ — kullanıcı cancel'a basarsa bıraktığı yerde kalsın
-      // Eski pozisyonu kaydet, bağlantı seçilirse oraya geri dönülecek
-      connectOrigPos={sourceId:p.id,x:ox,y:oy};
-      saveState();renderAll();
-      openConnectModal(p.id,targetId);
-    }else if(moved){
-      saveState();renderAll();
-    }
-    clearDropTarget();
+  el.addEventListener('click',e=>{
+    if(moved){moved=false;return;}
+    e.stopPropagation();
+    selectPerson(p.id);
   });
-
-  el.addEventListener('click',e=>{if(moved){moved=false;return;}e.stopPropagation();selectPerson(p.id);});
   el.addEventListener('dblclick',e=>{e.stopPropagation();openEditPerson(p.id);});
   el.addEventListener('contextmenu',e=>{
     e.preventDefault();e.stopPropagation();
     selectPerson(p.id);
     showContextMenu(e.clientX,e.clientY,p.id);
   });
+  // Hover focus mode (desktop mouse — touch'ta tetiklenmez)
   el.addEventListener('mouseenter',()=>applyFocus(p.id));
   el.addEventListener('mouseleave',()=>applyFocus(null));
   el.querySelectorAll('.quick-btn').forEach(b=>{
@@ -1465,7 +1532,7 @@ function setupPersonInteractions(el,p){
       else if(a==='parent')openParentModal(p.id);
     });
   });
-  // Photo drop (HTML5 file drag)
+  // Photo drop (HTML5 file drag — desktop)
   el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over');});
   el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
   el.addEventListener('drop',async e=>{
@@ -1490,24 +1557,85 @@ function debouncedRelink(){
 canvasWrap.addEventListener('click',e=>{
   if(e.target===canvasWrap||e.target===canvasEl||e.target===svgEl||e.target.classList.contains('empty-state')){
     selectPerson(null);
+    applyFocus(null); // Mobil: hover yok, fokus sadece açıkça temizlenebilir
   }
 });
 
-// Pan with middle button or empty drag — TRANSFORM tabanlı (canvas boyutundan bağımsız, her zaman çalışır)
+// Pan + Pinch zoom — pointer events (mouse + touch + pen ortak API)
+const activePointers=new Map();
 let panData=null;
-canvasWrap.addEventListener('mousedown',e=>{
-  if(e.button===1||(e.button===0&&(e.target===canvasWrap||e.target===canvasEl||e.target===svgEl))){
+let pinchData=null;
+
+function isEmptyCanvasTarget(target){
+  return target===canvasWrap||target===canvasEl||target===svgEl||target.classList?.contains('lines');
+}
+
+canvasWrap.addEventListener('pointerdown',e=>{
+  // Sadece boş alanda pan/pinch başlat; person/buton üzerinde değil
+  if(!isEmptyCanvasTarget(e.target))return;
+  if(e.pointerType==='mouse'&&e.button!==0&&e.button!==1)return;
+
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  try{canvasWrap.setPointerCapture(e.pointerId);}catch(_){}
+
+  if(activePointers.size===2){
+    // İki parmak → pinch zoom başlat
+    const ps=[...activePointers.values()];
+    pinchData={
+      dist:Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y),
+      scale:view.scale,
+      offsetX:view.offsetX,
+      offsetY:view.offsetY,
+    };
+    panData=null;
+    canvasWrap.classList.remove('panning');
+  }else if(activePointers.size===1){
+    // Tek parmak/mouse → pan başlat
     panData={x:e.clientX,y:e.clientY,ox:view.offsetX,oy:view.offsetY};
-    canvasWrap.classList.add('panning');e.preventDefault();
+    canvasWrap.classList.add('panning');
+  }
+  e.preventDefault();
+});
+
+canvasWrap.addEventListener('pointermove',e=>{
+  if(!activePointers.has(e.pointerId))return;
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+  if(activePointers.size===2&&pinchData){
+    const ps=[...activePointers.values()];
+    const newDist=Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y);
+    const newScale=Math.max(.2,Math.min(3,pinchData.scale*(newDist/pinchData.dist)));
+    const rect=canvasWrap.getBoundingClientRect();
+    const cx=(ps[0].x+ps[1].x)/2-rect.left;
+    const cy=(ps[0].y+ps[1].y)/2-rect.top;
+    const k=newScale/pinchData.scale;
+    view.scale=newScale;
+    view.offsetX=cx-(cx-pinchData.offsetX)*k;
+    view.offsetY=cy-(cy-pinchData.offsetY)*k;
+    applyTransform();
+  }else if(activePointers.size===1&&panData){
+    view.offsetX=panData.ox+(e.clientX-panData.x);
+    view.offsetY=panData.oy+(e.clientY-panData.y);
+    applyTransform();
   }
 });
-document.addEventListener('mousemove',e=>{
-  if(!panData)return;
-  view.offsetX=panData.ox+(e.clientX-panData.x);
-  view.offsetY=panData.oy+(e.clientY-panData.y);
-  applyTransform();
-});
-document.addEventListener('mouseup',()=>{if(panData){panData=null;canvasWrap.classList.remove('panning');}});
+
+function endCanvasPointer(e){
+  activePointers.delete(e.pointerId);
+  if(activePointers.size<2)pinchData=null;
+  if(activePointers.size===1){
+    // Pinch bitince kalan parmakla pan'a devam
+    const remaining=[...activePointers.values()][0];
+    panData={x:remaining.x,y:remaining.y,ox:view.offsetX,oy:view.offsetY};
+    canvasWrap.classList.add('panning');
+  }
+  if(activePointers.size===0){
+    panData=null;
+    canvasWrap.classList.remove('panning');
+  }
+}
+canvasWrap.addEventListener('pointerup',endCanvasPointer);
+canvasWrap.addEventListener('pointercancel',endCanvasPointer);
 
 // Mouse tekerleği: her zaman zoom (Ctrl gerekmez), varsayılan dikey kaydırma engellenir
 canvasWrap.addEventListener('wheel',e=>{
@@ -2344,6 +2472,12 @@ renderAll();
 updateUndoRedoButtons();
 if(!localStorage.getItem(WELCOME_KEY)&&state.people.length===0){
   document.getElementById('welcomeModal').classList.add('open');
+}
+
+// Mobilde sidebar'ı kapalı başlat (drawer olarak slide-in)
+if(window.innerWidth<=768){
+  document.getElementById('sidebar').classList.add('collapsed');
+  document.getElementById('sidebarToggle').textContent='›';
 }
 </script>
 </body>
