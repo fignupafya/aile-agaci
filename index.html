@@ -551,6 +551,33 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
   </div>
 </div>
 
+<!-- Export modal: fotoğraflarla / fotoğrafsız seçimi -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <h2 data-i18n="exportModalTitle">⬇ Dışa Aktar</h2>
+    <p style="color:#bbb;font-size:13px;margin:0 0 14px" data-i18n="exportQuestion">JSON dosyasına nasıl kaydedilsin?</p>
+    <div style="display:grid;gap:10px;margin-bottom:14px">
+      <button class="btn primary" id="exportWithPhotosBtn" style="text-align:left;padding:14px 16px;line-height:1.4">
+        <div style="font-weight:700;font-size:14px" data-i18n="exportWithPhotos">📸 Fotoğraflarla (tam yedek)</div>
+        <div style="font-size:11.5px;opacity:.85;margin-top:4px">
+          <span data-i18n="exportWithPhotosNote">Tüm fotoğraflar dahil — tam yedekleme için ideal</span>
+          <span id="exportWithPhotosSize" style="float:right;font-weight:700"></span>
+        </div>
+      </button>
+      <button class="btn" id="exportWithoutPhotosBtn" style="text-align:left;padding:14px 16px;line-height:1.4">
+        <div style="font-weight:700;font-size:14px" data-i18n="exportWithoutPhotos">📝 Sadece bilgiler (kompakt)</div>
+        <div style="font-size:11.5px;opacity:.85;margin-top:4px">
+          <span data-i18n="exportWithoutPhotosNote">Fotoğraflar dahil değil — hızlı paylaşım için</span>
+          <span id="exportWithoutPhotosSize" style="float:right;font-weight:700"></span>
+        </div>
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="exportCancelBtn" data-i18n="cancel">İptal</button>
+    </div>
+  </div>
+</div>
+
 <!-- Drag-to-connect modal -->
 <div class="modal-overlay" id="connectModal">
   <div class="modal">
@@ -857,6 +884,16 @@ const T={
   newPersonChild: ['+ Yeni Kişi (Çocuk)','+ New Person (Child)'],
   newPersonParent: ['+ Yeni Kişi (Ebeveyn)','+ New Person (Parent)'],
   newPersonParent2: ['+ Yeni Kişi (2. Ebeveyn)','+ New Person (2nd Parent)'],
+  // Export modal
+  exportModalTitle: ['⬇ Dışa Aktar','⬇ Export'],
+  exportQuestion: ['JSON dosyasına nasıl kaydedilsin?','How should the JSON file be saved?'],
+  exportWithPhotos: ['📸 Fotoğraflarla (tam yedek)','📸 With photos (full backup)'],
+  exportWithPhotosNote: ['Tüm fotoğraflar dahil — tam yedekleme için ideal','All photos included — ideal for full backup'],
+  exportWithoutPhotos: ['📝 Sadece bilgiler (kompakt)','📝 Data only (compact)'],
+  exportWithoutPhotosNote: ['Fotoğraflar dahil değil — hızlı paylaşım için','No photos — for quick sharing'],
+  // Stats — storage
+  statStorageSize: ['Veri boyutu','Data size'],
+  statPhotoCount: ['Fotoğraflı kişi','People with photo'],
 };
 
 let currentLang;
@@ -1855,7 +1892,7 @@ parentForm.addEventListener('submit',e=>{
 });
 
 // Modal close
-[personModal,unionModal,childModal,parentModal,document.getElementById('welcomeModal'),document.getElementById('statsModal'),document.getElementById('helpModal'),document.getElementById('connectModal')].forEach(m=>{
+[personModal,unionModal,childModal,parentModal,document.getElementById('welcomeModal'),document.getElementById('statsModal'),document.getElementById('helpModal'),document.getElementById('connectModal'),document.getElementById('exportModal')].forEach(m=>{
   m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
 });
 
@@ -2048,13 +2085,43 @@ document.getElementById('clearBtn').addEventListener('click',()=>{
   state={people:[],unions:[],families:[],nextId:1};selectedId=null;saveState();renderAll();
 });
 document.getElementById('rearrangeBtn').addEventListener('click',autoArrange);
-document.getElementById('exportJsonBtn').addEventListener('click',()=>{
-  const j=JSON.stringify(state,null,2);
+// Export: modal aç, kullanıcıya fotoğrafla mı fotoğrafsız mı diye sor
+function fmtSize(bytes){
+  if(bytes<1024)return bytes+' B';
+  if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';
+  return (bytes/1024/1024).toFixed(2)+' MB';
+}
+function openExportModal(){
+  if(!state.people.length){alert(t('alertEmptyTree'));return;}
+  // İki versiyonun tahmini boyutlarını hesapla
+  const fullJson=JSON.stringify(state);
+  const stripped={...state,people:state.people.map(p=>{const c={...p};delete c.photo;return c;})};
+  const compactJson=JSON.stringify(stripped);
+  document.getElementById('exportWithPhotosSize').textContent='≈ '+fmtSize(fullJson.length);
+  document.getElementById('exportWithoutPhotosSize').textContent='≈ '+fmtSize(compactJson.length);
+  document.getElementById('exportModal').classList.add('open');
+}
+function doExport(includePhotos){
+  let data;
+  if(includePhotos){
+    data=state;
+  }else{
+    data={...state,people:state.people.map(p=>{const c={...p};delete c.photo;return c;})};
+  }
+  const j=JSON.stringify(data,null,2);
   const b=new Blob([j],{type:'application/json'});
   const u=URL.createObjectURL(b);
-  const a=document.createElement('a');a.href=u;a.download=`aile-agaci-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  const a=document.createElement('a');
+  a.href=u;
+  a.download=`aile-agaci-${new Date().toISOString().slice(0,10)}${includePhotos?'-tam':'-kompakt'}.json`;
+  a.click();
   URL.revokeObjectURL(u);
-});
+  document.getElementById('exportModal').classList.remove('open');
+}
+document.getElementById('exportJsonBtn').addEventListener('click',openExportModal);
+document.getElementById('exportWithPhotosBtn').addEventListener('click',()=>doExport(true));
+document.getElementById('exportWithoutPhotosBtn').addEventListener('click',()=>doExport(false));
+document.getElementById('exportCancelBtn').addEventListener('click',()=>document.getElementById('exportModal').classList.remove('open'));
 document.getElementById('exportPngBtn').addEventListener('click',exportAsPng);
 document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
 document.getElementById('importFile').addEventListener('change',e=>{
@@ -2094,6 +2161,8 @@ function showStats(){
   const avgAge=ages.length?Math.round(ages.reduce((s,a)=>s+a,0)/ages.length):0;
   const oldest=state.people.filter(p=>p.dob&&!p.dead).reduce((a,b)=>(a&&a.dob<b.dob)?a:b,null);
   const youngest=state.people.filter(p=>p.dob).reduce((a,b)=>(a&&a.dob>b.dob)?a:b,null);
+  const storageBytes=JSON.stringify(state).length;
+  const photosCount=state.people.filter(p=>p.photo).length;
   document.getElementById('statsContent').innerHTML=`
     <div class="stats-grid">
       <div class="stat-card"><div class="num">${n}</div><div class="label">${t('statTotalPeople')}</div></div>
@@ -2102,6 +2171,8 @@ function showStats(){
       <div class="stat-card"><div class="num">${dead}</div><div class="label">${t('statDeceased')}</div></div>
       <div class="stat-card"><div class="num">${state.families.length}</div><div class="label">${t('statBonds')}</div></div>
       <div class="stat-card"><div class="num">${avgAge||'—'}</div><div class="label">${t('statAvgLife')}</div></div>
+      <div class="stat-card"><div class="num" style="font-size:18px">${fmtSize(storageBytes)}</div><div class="label">${t('statStorageSize')}</div></div>
+      <div class="stat-card"><div class="num">${photosCount}</div><div class="label">${t('statPhotoCount')}</div></div>
     </div>
     ${oldest?`<div style="margin-top:14px;padding:10px;background:rgba(95,168,245,.1);border-radius:8px;font-size:12.5px">${t('oldestLiving')} <b>${escapeHtml(oldest.name)}</b> (${oldest.dob})</div>`:''}
     ${youngest?`<div style="margin-top:6px;padding:10px;background:rgba(102,214,155,.1);border-radius:8px;font-size:12.5px">${t('youngest')} <b>${escapeHtml(youngest.name)}</b> (${youngest.dob})</div>`:''}
