@@ -748,7 +748,11 @@ function setZoom(s,cx,cy){
   applyTransform();
 }
 function fitToView(){
-  if(!state.people.length){view.scale=1;view.offsetX=0;view.offsetY=0;applyTransform();return;}
+  if(!state.people.length){
+    view.scale=1;view.offsetX=0;view.offsetY=0;
+    canvasWrap.scrollLeft=0;canvasWrap.scrollTop=0;
+    applyTransform();return;
+  }
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   state.people.forEach(p=>{
     minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);
@@ -760,6 +764,8 @@ function fitToView(){
   view.scale=Math.min(1,Math.min(sx,sy)*.9);
   view.offsetX=-minX*view.scale+50;
   view.offsetY=-minY*view.scale+50;
+  // Scrollbar pozisyonunu da sıfırla — yoksa transform doğru olsa bile scroll eski yerinde kalır
+  canvasWrap.scrollLeft=0;canvasWrap.scrollTop=0;
   applyTransform();
 }
 
