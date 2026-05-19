@@ -60,15 +60,16 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 .person.has-warning::after{content:"⚠";position:absolute;top:-4px;left:-4px;background:#ffae64;color:#000;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;z-index:5;border:2px solid #fff}
 
 .avatar{width:80px;height:80px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.7);border:3px solid rgba(255,255,255,.9);box-shadow:0 6px 18px rgba(0,0,0,.55);position:relative;overflow:hidden;background-size:cover;background-position:center}
-.avatar.demir{background:linear-gradient(135deg,#6db4f9,#244e9c)}
-.avatar.kaya{background:linear-gradient(135deg,#74e09b,#1b7244)}
-.avatar.sahin{background:linear-gradient(135deg,#ffae64,#b14a18)}
-.avatar.ozturk{background:linear-gradient(135deg,#c084e2,#54316b)}
-.avatar.outsider{background:linear-gradient(135deg,#c0c8d3,#545d6b)}
-.avatar.pink{background:linear-gradient(135deg,#ff97c4,#b34c7d)}
-.avatar.cyan{background:linear-gradient(135deg,#5fd6ff,#2f7193)}
-.avatar.yellow{background:linear-gradient(135deg,#ffe066,#b08a0e)}
-.avatar.red{background:linear-gradient(135deg,#ff6b6b,#8b1f1f)}
+/* background-image kullanılıyor (background: shorthand DEĞİL) — shorthand kullanılırsa background-size:cover ve background-position:center'i default'a (auto + 0% 0%) sıfırlar, fotoğraf sol-üst köşeden cropluyor */
+.avatar.demir{background-image:linear-gradient(135deg,#6db4f9,#244e9c)}
+.avatar.kaya{background-image:linear-gradient(135deg,#74e09b,#1b7244)}
+.avatar.sahin{background-image:linear-gradient(135deg,#ffae64,#b14a18)}
+.avatar.ozturk{background-image:linear-gradient(135deg,#c084e2,#54316b)}
+.avatar.outsider{background-image:linear-gradient(135deg,#c0c8d3,#545d6b)}
+.avatar.pink{background-image:linear-gradient(135deg,#ff97c4,#b34c7d)}
+.avatar.cyan{background-image:linear-gradient(135deg,#5fd6ff,#2f7193)}
+.avatar.yellow{background-image:linear-gradient(135deg,#ffe066,#b08a0e)}
+.avatar.red{background-image:linear-gradient(135deg,#ff6b6b,#8b1f1f)}
 .avatar.male{border-color:#b3d4ff}
 .avatar.female{border-color:#ffc4c4}
 .avatar.nb{border-color:#ffe066;border-style:dashed}
