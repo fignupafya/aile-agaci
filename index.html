@@ -153,7 +153,9 @@ body.sidebar-collapsed .sidebar-toggle{right:0}
 .rel-add-btn{width:100%;margin-top:8px;padding:6px;font-size:12px}
 
 /* ===== ZOOM CONTROLS ===== */
-.zoom-controls{position:absolute;bottom:20px;left:20px;display:flex;flex-direction:column;gap:4px;z-index:50;background:rgba(15,18,32,.85);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:6px;backdrop-filter:blur(8px)}
+/* position:fixed → viewport'a göre konumlanır; 100vh/dvh farkı yaşandığında bile görünür kalır
+   safe-area-inset → iOS home indicator + Android gesture bar için boşluk bırakır */
+.zoom-controls{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:calc(20px + env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:4px;z-index:50;background:rgba(15,18,32,.85);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:6px;backdrop-filter:blur(8px)}
 .zoom-controls .btn{padding:6px 10px;font-size:14px;min-width:38px}
 .zoom-level{font-size:11px;color:#aab1c6;text-align:center;padding:3px 0}
 
@@ -340,7 +342,7 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
   .quick-btn{width:30px;height:30px;font-size:16px} /* daha büyük dokunma hedefi */
 }
 
-/* Çok dar ekran (≤480px): tek sütun grid'ler */
+/* Çok dar ekran (≤480px): tek sütun grid'ler + brand icon-only */
 @media (max-width:480px){
   .welcome-features{grid-template-columns:1fr}
   .connect-grid{grid-template-columns:1fr}
@@ -348,7 +350,13 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
   .shortcuts-list{grid-template-columns:1fr}
   .form-row{flex-direction:column;gap:0}
   header{padding:8px 10px;gap:6px}
-  .brand{font-size:12px}
+  /* Brand metni gizle, sadece 🌳 emoji bırak — search'e yer aç */
+  .brand{font-size:0!important;max-width:30px;overflow:hidden;flex-shrink:0}
+  .brand::before{content:"🌳";font-size:22px;line-height:1}
+  .search-wrap{min-width:80px}
+  .btn{padding:7px 9px;min-height:34px}
+  .btn.icon{min-width:34px;padding:7px}
+  .btn.primary{padding:7px 11px}
 }
 
 @media print{
@@ -373,21 +381,21 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
     </div>
     <div class="toolbar">
       <button class="btn icon" id="undoBtn" data-i18n-title="undoTitle" title="Geri al (Ctrl+Z)" disabled>↶</button>
-      <button class="btn icon" id="redoBtn" data-i18n-title="redoTitle" title="Yeniden yap (Ctrl+Y)" disabled>↷</button>
+      <button class="btn icon desktop-only" id="redoBtn" data-i18n-title="redoTitle" title="Yeniden yap (Ctrl+Y)" disabled>↷</button>
       <button class="btn primary" id="addPersonBtn" data-i18n="addPersonBtn" data-i18n-title="addPersonTitle" title="Yeni kişi (Ctrl+N)">+ Kişi</button>
-      <select id="layoutSelect" data-i18n-title="layoutSelectTitle" title="Düzen tipi">
+      <select id="layoutSelect" class="desktop-only" data-i18n-title="layoutSelectTitle" title="Düzen tipi">
         <option value="top-down" data-i18n="layoutTopDown">↓ Yukarıdan</option>
         <option value="left-right" data-i18n="layoutLeftRight">→ Soldan sağa</option>
       </select>
-      <button class="btn" id="rearrangeBtn" data-i18n="rearrangeBtn" data-i18n-title="rearrangeTitle" title="Otomatik düzenle">⊞ Düzenle</button>
+      <button class="btn desktop-only" id="rearrangeBtn" data-i18n="rearrangeBtn" data-i18n-title="rearrangeTitle" title="Otomatik düzenle">⊞ Düzenle</button>
       <button class="btn desktop-only" id="exportPngBtn" data-i18n="exportPngBtn" data-i18n-title="exportPngTitle" title="PNG olarak indir">🖼 Resim</button>
       <button class="btn desktop-only" id="exportJsonBtn" data-i18n="exportJsonBtn" data-i18n-title="exportJsonTitle" title="Tüm veriyi dosya olarak kaydet">💾 Yedekle</button>
       <button class="btn desktop-only" id="importBtn" data-i18n="importBtn" data-i18n-title="importTitle" title="Yedek dosyasını geri yükle">📂 Yükle</button>
       <button class="btn icon desktop-only" id="statsBtn" data-i18n-title="statsTitle" title="İstatistikler">📊</button>
-      <button class="btn icon" id="helpBtn" data-i18n-title="helpTitle" title="Yardım (?)">❓</button>
+      <button class="btn icon desktop-only" id="helpBtn" data-i18n-title="helpTitle" title="Yardım (?)">❓</button>
       <button class="btn icon desktop-only" id="loadSampleBtn" data-i18n-title="sampleTitle" title="Örnek aile">📋</button>
       <button class="btn icon danger desktop-only" id="clearBtn" data-i18n-title="clearTitle" title="Sıfırla">🗑</button>
-      <button class="btn icon" id="langToggleBtn" title="Switch to English">🌐 TR</button>
+      <button class="btn icon desktop-only" id="langToggleBtn" title="Switch to English">🌐 TR</button>
       <button class="btn icon mobile-only" id="mobileMenuBtn" title="Menü">☰</button>
     </div>
   </header>
@@ -737,7 +745,9 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
   <button class="mobile-menu-btn" data-act="import"><span class="mm-icon">📂</span><span data-i18n="importTitle">Yedek dosyasını geri yükle</span></button>
   <div class="mobile-menu-divider"></div>
   <button class="mobile-menu-btn" data-act="stats"><span class="mm-icon">📊</span><span data-i18n="statsTitle">İstatistikler</span></button>
+  <button class="mobile-menu-btn" data-act="help"><span class="mm-icon">❓</span><span data-i18n="helpTitle">Yardım</span></button>
   <button class="mobile-menu-btn" data-act="sample"><span class="mm-icon">📋</span><span data-i18n="sampleTitle">Örnek aile</span></button>
+  <button class="mobile-menu-btn" data-act="lang"><span class="mm-icon">🌐</span><span>Dil değiştir / Switch language</span></button>
   <div class="mobile-menu-divider"></div>
   <button class="mobile-menu-btn danger" data-act="clear"><span class="mm-icon">🗑</span><span data-i18n="clearTitle">Sıfırla</span></button>
 </div>
@@ -2730,7 +2740,9 @@ mobileMenu.addEventListener('click',e=>{
     case 'exportJson':openExportModal();break;
     case 'import':document.getElementById('importFile').click();break;
     case 'stats':showStats();break;
+    case 'help':document.getElementById('helpModal').classList.add('open');break;
     case 'sample':loadSample();break;
+    case 'lang':setLanguage(currentLang==='tr'?'en':'tr');break;
     case 'clear':document.getElementById('clearBtn').click();break;
   }
 });
