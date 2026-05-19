@@ -105,8 +105,25 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 .sidebar h3{margin:0 0 8px 0;font-size:11px;color:#8a91a6;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
 .sidebar-section{margin-bottom:18px}
 
-.sidebar-toggle{position:absolute;top:12px;right:0;background:rgba(15,18,32,.95);border:1px solid rgba(255,255,255,.15);border-right:none;border-radius:8px 0 0 8px;color:#fff;width:24px;height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;font-size:14px}
-.sidebar.collapsed + .sidebar-toggle{right:0}
+/* Sidebar toggle: her zaman görünür kalır, sidebar'la birlikte slide eder */
+.sidebar-toggle{
+  position:absolute;top:12px;
+  right:340px; /* default: sidebar açık → sidebar'ın sol kenarında */
+  background:rgba(15,18,32,.95);
+  border:1px solid rgba(255,255,255,.15);border-right:none;
+  border-radius:8px 0 0 8px;
+  color:#fff;width:26px;height:52px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  z-index:150; /* sidebar'ın üstünde kalır */
+  font-size:16px;
+  transition:right .25s;
+}
+/* HTML'de toggle, sidebar'dan ÖNCE — class durumunu body'ye yazıp orada kontrol et */
+body.sidebar-collapsed .sidebar-toggle{right:0}
+@media (max-width:768px){
+  .sidebar-toggle{right:320px;width:32px;height:60px;font-size:18px}
+  body.sidebar-collapsed .sidebar-toggle{right:0}
+}
 
 .empty-state-side{color:#888;font-size:13px;text-align:center;margin:40px 0;line-height:1.6}
 .empty-state-side h3{color:#aaa;font-size:14px;margin-bottom:12px;text-transform:none;letter-spacing:0}
@@ -223,6 +240,70 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 /* Touch optimizasyonu — pinch zoom ve drag için browser default davranışlarını engelle */
 .canvas-wrap,.canvas,.person{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 
+/* Desktop / mobile visibility */
+.mobile-only{display:none!important}
+@media (max-width:768px){
+  .desktop-only{display:none!important}
+  .mobile-only{display:inline-flex!important}
+  /* Mobil header: daha sıkı düzen */
+  header{flex-wrap:nowrap;overflow-x:auto}
+  .toolbar{flex-wrap:nowrap;gap:4px}
+  .brand{font-size:14px;flex-shrink:0}
+  .search-wrap{flex:1;min-width:100px;max-width:none;margin:0 4px}
+}
+
+/* Hamburger menü dropdown */
+.mobile-menu{
+  position:fixed;
+  top:54px;right:10px;
+  background:#1d2444;
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:12px;
+  padding:6px;
+  display:none;
+  flex-direction:column;
+  gap:2px;min-width:230px;
+  z-index:2000;
+  box-shadow:0 14px 32px rgba(0,0,0,.6);
+}
+.mobile-menu.open{display:flex}
+.mobile-menu-btn{
+  background:transparent;border:none;
+  color:#e6e9f2;
+  padding:11px 14px;
+  text-align:left;
+  font-size:14px;font-family:inherit;
+  border-radius:8px;
+  cursor:pointer;
+  display:flex;align-items:center;gap:12px;
+  min-height:44px;
+}
+.mobile-menu-btn .mm-icon{font-size:18px;width:24px;text-align:center}
+.mobile-menu-btn:hover,.mobile-menu-btn:active{background:rgba(95,168,245,.18)}
+.mobile-menu-btn.danger{color:#f5b7b1}
+.mobile-menu-btn.danger:hover{background:rgba(231,76,60,.2)}
+.mobile-menu-divider{height:1px;background:rgba(255,255,255,.1);margin:4px 8px}
+
+/* Pick mode: canvas'tan kişi seçme görseli */
+.pick-hint{
+  position:fixed;
+  top:60px;left:50%;
+  transform:translateX(-50%);
+  background:#ffe066;color:#000;
+  padding:10px 18px;border-radius:24px;
+  font-size:13px;font-weight:700;
+  z-index:3000;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);
+  pointer-events:none;
+  animation:pickPulse 1.4s ease-in-out infinite;
+}
+@keyframes pickPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.04)}}
+body.pick-mode .canvas-wrap{cursor:crosshair}
+body.pick-mode .person:not(.pick-self){filter:brightness(1.15) saturate(1.2)}
+body.pick-mode .person:not(.pick-self):hover .avatar,
+body.pick-mode .person:not(.pick-self) .avatar{outline:3px solid #ffe066;outline-offset:3px}
+body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
+
 /* Responsive — mobil */
 @media (max-width:768px){
   .toolbar{gap:4px}
@@ -299,14 +380,15 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
         <option value="left-right" data-i18n="layoutLeftRight">→ Soldan sağa</option>
       </select>
       <button class="btn" id="rearrangeBtn" data-i18n="rearrangeBtn" data-i18n-title="rearrangeTitle" title="Otomatik düzenle">⊞ Düzenle</button>
-      <button class="btn" id="exportPngBtn" data-i18n-title="exportPngTitle" title="PNG olarak indir">🖼 PNG</button>
-      <button class="btn" id="exportJsonBtn" data-i18n-title="exportJsonTitle" title="JSON yedeği">⬇ JSON</button>
-      <button class="btn" id="importBtn" data-i18n="importBtn" data-i18n-title="importTitle" title="JSON yükle">⬆ Yükle</button>
-      <button class="btn icon" id="statsBtn" data-i18n-title="statsTitle" title="İstatistikler">📊</button>
+      <button class="btn desktop-only" id="exportPngBtn" data-i18n="exportPngBtn" data-i18n-title="exportPngTitle" title="PNG olarak indir">🖼 Resim</button>
+      <button class="btn desktop-only" id="exportJsonBtn" data-i18n="exportJsonBtn" data-i18n-title="exportJsonTitle" title="Tüm veriyi dosya olarak kaydet">💾 Yedekle</button>
+      <button class="btn desktop-only" id="importBtn" data-i18n="importBtn" data-i18n-title="importTitle" title="Yedek dosyasını geri yükle">📂 Yükle</button>
+      <button class="btn icon desktop-only" id="statsBtn" data-i18n-title="statsTitle" title="İstatistikler">📊</button>
       <button class="btn icon" id="helpBtn" data-i18n-title="helpTitle" title="Yardım (?)">❓</button>
-      <button class="btn icon" id="loadSampleBtn" data-i18n-title="sampleTitle" title="Örnek aile">📋</button>
-      <button class="btn icon danger" id="clearBtn" data-i18n-title="clearTitle" title="Sıfırla">🗑</button>
-      <button class="btn icon" id="langToggleBtn" title="Switch to English">🌐 EN</button>
+      <button class="btn icon desktop-only" id="loadSampleBtn" data-i18n-title="sampleTitle" title="Örnek aile">📋</button>
+      <button class="btn icon danger desktop-only" id="clearBtn" data-i18n-title="clearTitle" title="Sıfırla">🗑</button>
+      <button class="btn icon" id="langToggleBtn" title="Switch to English">🌐 TR</button>
+      <button class="btn icon mobile-only" id="mobileMenuBtn" title="Menü">☰</button>
     </div>
   </header>
 
@@ -418,7 +500,12 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
   <div class="modal">
     <h2 data-i18n="unionModalTitle">💞 Eş / Partner Ekle</h2>
     <form id="unionForm">
-      <div class="form-group"><label data-i18n="whoWith">Kim ile?</label><select name="partner" id="unionPartnerSelect"></select></div>
+      <div class="form-group"><label data-i18n="whoWith">Kim ile?</label>
+        <div style="display:flex;gap:8px">
+          <select name="partner" id="unionPartnerSelect" style="flex:1"></select>
+          <button type="button" class="btn" id="unionPickBtn" data-i18n="pickFromCanvas" title="Canvas'tan tıklayarak seç">👉 Canvas'tan seç</button>
+        </div>
+      </div>
       <div class="form-group"><label data-i18n="relType">İlişki türü</label>
         <select name="type" id="unionTypeSelect">
           <option value="married" data-i18n="married">💍 Evli</option><option value="divorced" data-i18n="divorced">💔 Boşanmış</option>
@@ -446,7 +533,12 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
         <select name="otherParent" id="childOtherParentSelect"></select>
         <div class="help-text" data-i18n="otherParentHelp">Tek ebeveynse "Yok" bırak</div>
       </div>
-      <div class="form-group"><label data-i18n="childLabel">Çocuk</label><select name="child" id="childChildSelect"></select></div>
+      <div class="form-group"><label data-i18n="childLabel">Çocuk</label>
+        <div style="display:flex;gap:8px">
+          <select name="child" id="childChildSelect" style="flex:1"></select>
+          <button type="button" class="btn" id="childPickBtn" data-i18n="pickFromCanvas" title="Canvas'tan tıklayarak seç">👉 Canvas'tan seç</button>
+        </div>
+      </div>
       <div class="form-group"><label data-i18n="relType">İlişki türü</label>
         <select name="type" id="childTypeSelect">
           <option value="bio" data-i18n="bio">Biyolojik</option><option value="adopted" data-i18n="adopted">+ Evlat edinme</option>
@@ -469,8 +561,18 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
   <div class="modal">
     <h2 data-i18n="parentModalTitle">👨‍👩 Ebeveyn Ekle</h2>
     <form id="parentForm">
-      <div class="form-group"><label data-i18n="parent1">1. Ebeveyn</label><select name="parent1" id="parent1Select"></select></div>
-      <div class="form-group"><label data-i18n="parent2">2. Ebeveyn (isteğe bağlı)</label><select name="parent2" id="parent2Select"></select></div>
+      <div class="form-group"><label data-i18n="parent1">1. Ebeveyn</label>
+        <div style="display:flex;gap:8px">
+          <select name="parent1" id="parent1Select" style="flex:1"></select>
+          <button type="button" class="btn" id="parent1PickBtn" data-i18n="pickFromCanvas" title="Canvas'tan tıklayarak seç">👉 Canvas'tan seç</button>
+        </div>
+      </div>
+      <div class="form-group"><label data-i18n="parent2">2. Ebeveyn (isteğe bağlı)</label>
+        <div style="display:flex;gap:8px">
+          <select name="parent2" id="parent2Select" style="flex:1"></select>
+          <button type="button" class="btn" id="parent2PickBtn" data-i18n="pickFromCanvas" title="Canvas'tan tıklayarak seç">👉 Canvas'tan seç</button>
+        </div>
+      </div>
       <div class="form-group"><label data-i18n="relType">İlişki türü</label>
         <select name="type" id="parentTypeSelect">
           <option value="bio" data-i18n="bio">Biyolojik</option><option value="adopted" data-i18n="adopted">+ Evlat edinme</option>
@@ -625,6 +727,24 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 <!-- Shift kilit göstergesi -->
 <div id="shiftHint" class="shift-hint"></div>
 
+<!-- Hamburger menü (mobil) -->
+<div id="mobileMenu" class="mobile-menu">
+  <button class="mobile-menu-btn" data-act="redo"><span class="mm-icon">↷</span><span data-i18n="shortcutRedo">Yeniden yap</span></button>
+  <button class="mobile-menu-btn" data-act="arrange"><span class="mm-icon">⊞</span><span data-i18n="rearrangeBtn">⊞ Düzenle</span></button>
+  <div class="mobile-menu-divider"></div>
+  <button class="mobile-menu-btn" data-act="exportPng"><span class="mm-icon">🖼</span><span data-i18n="exportPngTitle">Aile ağacını PNG olarak indir</span></button>
+  <button class="mobile-menu-btn" data-act="exportJson"><span class="mm-icon">💾</span><span data-i18n="exportJsonTitle">Tüm veriyi dosya olarak kaydet</span></button>
+  <button class="mobile-menu-btn" data-act="import"><span class="mm-icon">📂</span><span data-i18n="importTitle">Yedek dosyasını geri yükle</span></button>
+  <div class="mobile-menu-divider"></div>
+  <button class="mobile-menu-btn" data-act="stats"><span class="mm-icon">📊</span><span data-i18n="statsTitle">İstatistikler</span></button>
+  <button class="mobile-menu-btn" data-act="sample"><span class="mm-icon">📋</span><span data-i18n="sampleTitle">Örnek aile</span></button>
+  <div class="mobile-menu-divider"></div>
+  <button class="mobile-menu-btn danger" data-act="clear"><span class="mm-icon">🗑</span><span data-i18n="clearTitle">Sıfırla</span></button>
+</div>
+
+<!-- Pick mode hint (canvas'tan kişi seçilirken) -->
+<div id="pickHint" class="pick-hint" style="display:none"></div>
+
 <input type="file" id="importFile" accept=".json" style="display:none">
 
 <script>
@@ -646,10 +766,12 @@ const T={
   layoutLeftRight: ['→ Soldan sağa','→ Left-to-right'],
   rearrangeBtn: ['⊞ Düzenle','⊞ Arrange'],
   rearrangeTitle: ['Otomatik düzenle','Auto-arrange'],
-  exportPngTitle: ['PNG olarak indir','Download as PNG'],
-  exportJsonTitle: ['JSON yedeği','JSON backup'],
-  importBtn: ['⬆ Yükle','⬆ Import'],
-  importTitle: ['JSON yükle','Import JSON'],
+  exportPngBtn: ['🖼 Resim','🖼 Image'],
+  exportPngTitle: ['Aile ağacını PNG resmi olarak indir','Download family tree as PNG image'],
+  exportJsonBtn: ['💾 Yedekle','💾 Backup'],
+  exportJsonTitle: ['Tüm veriyi dosya olarak kaydet','Save all data to file'],
+  importBtn: ['📂 Yükle','📂 Restore'],
+  importTitle: ['Yedek dosyasını geri yükle','Restore from backup file'],
   statsTitle: ['İstatistikler','Statistics'],
   helpTitle: ['Yardım (?)','Help (?)'],
   sampleTitle: ['Örnek aile','Example family'],
@@ -884,6 +1006,20 @@ const T={
   newPersonChild: ['+ Yeni Kişi (Çocuk)','+ New Person (Child)'],
   newPersonParent: ['+ Yeni Kişi (Ebeveyn)','+ New Person (Parent)'],
   newPersonParent2: ['+ Yeni Kişi (2. Ebeveyn)','+ New Person (2nd Parent)'],
+  // Connect modal — kişi isimleriyle dinamik etiketler ($1=kaynak, $2=hedef)
+  connMarriedNamed: ['💍 $1 ile $2 evli','💍 $1 and $2 married'],
+  connDivorcedNamed: ['💔 $1 ile $2 boşanmış','💔 $1 and $2 divorced'],
+  connPartnerNamed: ['◇ $1 ile $2 partner','◇ $1 and $2 are partners'],
+  connSamesexNamed: ['⚭ $1 ile $2 eşcinsel partner','⚭ $1 and $2 same-sex partners'],
+  connChildNamed: ['⬇ $2, $1\'in çocuğu','⬇ $2 is $1\'s child'],
+  connParentNamed: ['⬆ $2, $1\'in ebeveyni','⬆ $2 is $1\'s parent'],
+  connSiblingNamed: ['👫 $1 ve $2 kardeş','👫 $1 and $2 are siblings'],
+  connCustomNamed: ['✦ $1 ↔ $2 özel ilişki','✦ $1 ↔ $2 custom relation'],
+  // Pick mode
+  pickHintUnion: ['👆 Eş olarak işaretlenecek kişiye dokunun (Esc: iptal)','👆 Tap a person to select as spouse (Esc to cancel)'],
+  pickHintChild: ['👆 Çocuk olarak işaretlenecek kişiye dokunun','👆 Tap the person to set as child'],
+  pickHintParent: ['👆 Ebeveyn olarak işaretlenecek kişiye dokunun','👆 Tap the person to set as parent'],
+  pickFromCanvas: ['👉 Canvas\'tan seç','👉 Pick from canvas'],
   // Export modal
   exportModalTitle: ['⬇ Dışa Aktar','⬇ Export'],
   exportQuestion: ['JSON dosyasına nasıl kaydedilsin?','How should the JSON file be saved?'],
@@ -923,7 +1059,8 @@ function applyTranslations(){
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder);});
   const btn=document.getElementById('langToggleBtn');
   if(btn){
-    btn.textContent=currentLang==='tr'?'🌐 EN':'🌐 TR';
+    // Mevcut dili göster (tıklayınca diğerine geçer)
+    btn.textContent=currentLang==='tr'?'🌐 TR':'🌐 EN';
     btn.title=currentLang==='tr'?'Switch to English':'Türkçeye geç';
   }
 }
@@ -1549,6 +1686,15 @@ function setupPersonInteractions(el,p){
   el.addEventListener('click',e=>{
     if(moved){moved=false;return;}
     e.stopPropagation();
+    // Pick mode aktifse: normal seçim yerine pickCallback'i çağır
+    if(pickCallback){
+      if(p.id!==pickExcludeId){
+        const cb=pickCallback;
+        exitPickMode();
+        cb(p.id);
+      }
+      return;
+    }
     selectPerson(p.id);
   });
   el.addEventListener('dblclick',e=>{e.stopPropagation();openEditPerson(p.id);});
@@ -1891,9 +2037,20 @@ parentForm.addEventListener('submit',e=>{
   h1(p1=>h2(p1,p2=>proc(p1,p2)));
 });
 
-// Modal close
+// Modal close: SADECE mousedown VE mouseup ikisi de backdrop'ta (modal kendisinde) gerçekleşirse kapat
+// Bu sayede input'a tıklayıp dragleyerek dışarı bırakınca modal yanlışlıkla kapanmaz.
 [personModal,unionModal,childModal,parentModal,document.getElementById('welcomeModal'),document.getElementById('statsModal'),document.getElementById('helpModal'),document.getElementById('connectModal'),document.getElementById('exportModal')].forEach(m=>{
-  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+  let downOnBackdrop=false;
+  m.addEventListener('mousedown',e=>{downOnBackdrop=(e.target===m);});
+  m.addEventListener('mouseup',e=>{
+    if(downOnBackdrop&&e.target===m)m.classList.remove('open');
+    downOnBackdrop=false;
+  });
+  // touch için pointer events ile de aynı mantık
+  m.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')downOnBackdrop=(e.target===m);});
+  m.addEventListener('pointerup',e=>{
+    if(e.pointerType!=='mouse'&&downOnBackdrop&&e.target===m)m.classList.remove('open');
+  });
 });
 
 //=================================================================
@@ -1913,6 +2070,20 @@ function openConnectModal(sourceId,targetId){
     return `<div class="person-mini"><div class="avatar ${pp.fam} ${pp.gender}" style="width:64px;height:64px;font-size:20px;margin:0 auto 6px;${ph}">${pp.photo?'':initials(pp.name)}</div><div style="font-size:12px;font-weight:600">${escapeHtml(pp.name)}</div></div>`;
   };
   document.getElementById('connectPreview').innerHTML=renderMini(src)+'<div class="arrow">↔</div>'+renderMini(tgt);
+
+  // Buton etiketlerini KİŞİ İSİMLERİ ile dinamik güncelle
+  const setLbl=(rel,key)=>{
+    const b=document.querySelector(`.conn-btn[data-rel="${rel}"] b`);
+    if(b)b.textContent=t(key,src.name,tgt.name);
+  };
+  setLbl('married','connMarriedNamed');
+  setLbl('divorced','connDivorcedNamed');
+  setLbl('partner','connPartnerNamed');
+  setLbl('samesex','connSamesexNamed');
+  setLbl('child-of-source','connChildNamed');
+  setLbl('parent-of-source','connParentNamed');
+  setLbl('sibling','connSiblingNamed');
+  setLbl('custom','connCustomNamed');
 
   // Alt-açıklamalar
   const srcSpouses=getSpousesOf(sourceId);
@@ -1983,13 +2154,20 @@ function applyConnection(sourceId,targetId,rel,customLabel){
     }
     addFamily(parents,sourceId,'bio');
   }else if(rel==='sibling'){
-    // Hedef, kaynak ile aynı ebeveynleri paylaşır
+    // Kardeş yap: ortak ebeveynleri belirle
+    // 1) Kaynakta ebeveyn varsa → hedefe ekle
+    // 2) Yoksa hedefte ebeveyn varsa → kaynağa ekle
+    // 3) İkisinde de yoksa hata
     const sourceParents=getParentsOf(sourceId);
-    if(sourceParents.length===0){
+    const targetParents=getParentsOf(targetId);
+    if(sourceParents.length>0){
+      addFamily(Array.from(new Set(sourceParents)).slice(0,2),targetId,'bio');
+    }else if(targetParents.length>0){
+      addFamily(Array.from(new Set(targetParents)).slice(0,2),sourceId,'bio');
+    }else{
       alert(t('alertSiblingNoParents'));
       return;
     }
-    addFamily(Array.from(new Set(sourceParents)).slice(0,2),targetId,'bio');
   }
   connectModal.classList.remove('open');
   renderAll();
@@ -2144,10 +2322,15 @@ document.getElementById('loadSampleBtn').addEventListener('click',loadSample);
 document.getElementById('zoomInBtn').addEventListener('click',()=>setZoom(view.scale*1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2));
 document.getElementById('zoomOutBtn').addEventListener('click',()=>setZoom(view.scale/1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2));
 document.getElementById('zoomFitBtn').addEventListener('click',fitToView);
-document.getElementById('sidebarToggle').addEventListener('click',()=>{
+function syncSidebarState(){
   const sb=document.getElementById('sidebar');
-  sb.classList.toggle('collapsed');
-  document.getElementById('sidebarToggle').textContent=sb.classList.contains('collapsed')?'›':'‹';
+  const collapsed=sb.classList.contains('collapsed');
+  document.body.classList.toggle('sidebar-collapsed',collapsed);
+  document.getElementById('sidebarToggle').textContent=collapsed?'‹':'›';
+}
+document.getElementById('sidebarToggle').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  syncSidebarState();
 });
 
 // Stats
@@ -2522,6 +2705,102 @@ document.getElementById('langToggleBtn').addEventListener('click',()=>{
 });
 
 //=================================================================
+// HAMBURGER MENU (mobil)
+//=================================================================
+const mobileMenuBtn=document.getElementById('mobileMenuBtn');
+const mobileMenu=document.getElementById('mobileMenu');
+mobileMenuBtn.addEventListener('click',e=>{
+  e.stopPropagation();
+  mobileMenu.classList.toggle('open');
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#mobileMenu')&&!e.target.closest('#mobileMenuBtn')){
+    mobileMenu.classList.remove('open');
+  }
+});
+mobileMenu.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-act]');
+  if(!btn)return;
+  const act=btn.dataset.act;
+  mobileMenu.classList.remove('open');
+  switch(act){
+    case 'redo':redo();break;
+    case 'arrange':autoArrange();break;
+    case 'exportPng':exportAsPng();break;
+    case 'exportJson':openExportModal();break;
+    case 'import':document.getElementById('importFile').click();break;
+    case 'stats':showStats();break;
+    case 'sample':loadSample();break;
+    case 'clear':document.getElementById('clearBtn').click();break;
+  }
+});
+
+//=================================================================
+// PICK MODE — canvas'tan kişi seçme
+//=================================================================
+let pickCallback=null;
+let pickExcludeId=null;
+let pickPreviousModal=null;
+const pickHintEl=document.getElementById('pickHint');
+
+function enterPickMode(excludeId,hintKey,modalToReopen,callback){
+  pickExcludeId=excludeId;
+  pickCallback=callback;
+  pickPreviousModal=modalToReopen;
+  // Mevcut modal'ı kapat (canvas'a erişebilmek için)
+  if(modalToReopen)modalToReopen.classList.remove('open');
+  document.body.classList.add('pick-mode');
+  pickHintEl.textContent=t(hintKey);
+  pickHintEl.style.display='block';
+  // Hariç tutulacak kişiyi işaretle (kullanıcı kendini seçmesin)
+  document.querySelectorAll('.person').forEach(el=>{
+    if(el.dataset.id===excludeId)el.classList.add('pick-self');
+  });
+}
+function exitPickMode(){
+  pickCallback=null;
+  pickExcludeId=null;
+  pickPreviousModal=null;
+  document.body.classList.remove('pick-mode');
+  pickHintEl.style.display='none';
+  document.querySelectorAll('.person.pick-self').forEach(el=>el.classList.remove('pick-self'));
+}
+// Esc ile iptal
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&pickCallback){
+    const prev=pickPreviousModal;
+    exitPickMode();
+    if(prev)prev.classList.add('open');
+  }
+});
+
+// Pick butonları
+document.getElementById('unionPickBtn').addEventListener('click',()=>{
+  enterPickMode(unionForPersonId,'pickHintUnion',unionModal,(pickedId)=>{
+    unionModal.classList.add('open');
+    document.getElementById('unionPartnerSelect').value=pickedId;
+  });
+});
+document.getElementById('childPickBtn').addEventListener('click',()=>{
+  enterPickMode(childForPersonId,'pickHintChild',childModal,(pickedId)=>{
+    childModal.classList.add('open');
+    document.getElementById('childChildSelect').value=pickedId;
+  });
+});
+document.getElementById('parent1PickBtn').addEventListener('click',()=>{
+  enterPickMode(parentForPersonId,'pickHintParent',parentModal,(pickedId)=>{
+    parentModal.classList.add('open');
+    document.getElementById('parent1Select').value=pickedId;
+  });
+});
+document.getElementById('parent2PickBtn').addEventListener('click',()=>{
+  enterPickMode(parentForPersonId,'pickHintParent',parentModal,(pickedId)=>{
+    parentModal.classList.add('open');
+    document.getElementById('parent2Select').value=pickedId;
+  });
+});
+
+//=================================================================
 // INIT
 //=================================================================
 loadState();
@@ -2548,8 +2827,8 @@ if(!localStorage.getItem(WELCOME_KEY)&&state.people.length===0){
 // Mobilde sidebar'ı kapalı başlat (drawer olarak slide-in)
 if(window.innerWidth<=768){
   document.getElementById('sidebar').classList.add('collapsed');
-  document.getElementById('sidebarToggle').textContent='›';
 }
+syncSidebarState();
 </script>
 </body>
 </html>
