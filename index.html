@@ -55,7 +55,7 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 /* Drag-to-connect: hedef kişi pembe halka + nabız animasyonu */
 .person.drop-target .avatar{box-shadow:0 0 0 5px #ff97c4,0 0 30px rgba(255,151,196,.8)!important;border-color:#ff97c4!important;animation:dropPulse .8s ease-in-out infinite}
 @keyframes dropPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-.person.drop-target::before{content:"🔗 Bağla";position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#ff97c4;color:#fff;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:700;white-space:nowrap;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.person.drop-target::before{content:attr(data-drop-hint);position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#ff97c4;color:#fff;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:700;white-space:nowrap;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .person.selected .avatar{border-color:#ffe066!important;box-shadow:0 0 26px rgba(255,224,102,.65),0 6px 18px rgba(0,0,0,.55)!important}
 .person.has-warning::after{content:"⚠";position:absolute;top:-4px;left:-4px;background:#ffae64;color:#000;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;z-index:5;border:2px solid #fff}
 
@@ -245,27 +245,28 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 <body>
 <div class="app">
   <header>
-    <span class="brand">🌳 Aile Ağacı</span>
+    <span class="brand" data-i18n="brand">🌳 Aile Ağacı</span>
     <div class="search-wrap">
-      <input id="searchInput" placeholder="İsme göre ara...">
+      <input id="searchInput" data-i18n-placeholder="searchPh" placeholder="İsme göre ara...">
       <div class="search-results" id="searchResults"></div>
     </div>
     <div class="toolbar">
-      <button class="btn icon" id="undoBtn" title="Geri al (Ctrl+Z)" disabled>↶</button>
-      <button class="btn icon" id="redoBtn" title="Yeniden yap (Ctrl+Y)" disabled>↷</button>
-      <button class="btn primary" id="addPersonBtn" title="Yeni kişi (Ctrl+N)">+ Kişi</button>
-      <select id="layoutSelect" title="Düzen tipi">
-        <option value="top-down">↓ Yukarıdan</option>
-        <option value="left-right">→ Soldan sağa</option>
+      <button class="btn icon" id="undoBtn" data-i18n-title="undoTitle" title="Geri al (Ctrl+Z)" disabled>↶</button>
+      <button class="btn icon" id="redoBtn" data-i18n-title="redoTitle" title="Yeniden yap (Ctrl+Y)" disabled>↷</button>
+      <button class="btn primary" id="addPersonBtn" data-i18n="addPersonBtn" data-i18n-title="addPersonTitle" title="Yeni kişi (Ctrl+N)">+ Kişi</button>
+      <select id="layoutSelect" data-i18n-title="layoutSelectTitle" title="Düzen tipi">
+        <option value="top-down" data-i18n="layoutTopDown">↓ Yukarıdan</option>
+        <option value="left-right" data-i18n="layoutLeftRight">→ Soldan sağa</option>
       </select>
-      <button class="btn" id="rearrangeBtn" title="Otomatik düzenle">⊞ Düzenle</button>
-      <button class="btn" id="exportPngBtn" title="PNG olarak indir">🖼 PNG</button>
-      <button class="btn" id="exportJsonBtn" title="JSON yedeği">⬇ JSON</button>
-      <button class="btn" id="importBtn" title="JSON yükle">⬆ Yükle</button>
-      <button class="btn icon" id="statsBtn" title="İstatistikler">📊</button>
-      <button class="btn icon" id="helpBtn" title="Yardım (?)">❓</button>
-      <button class="btn icon" id="loadSampleBtn" title="Örnek aile">📋</button>
-      <button class="btn icon danger" id="clearBtn" title="Sıfırla">🗑</button>
+      <button class="btn" id="rearrangeBtn" data-i18n="rearrangeBtn" data-i18n-title="rearrangeTitle" title="Otomatik düzenle">⊞ Düzenle</button>
+      <button class="btn" id="exportPngBtn" data-i18n-title="exportPngTitle" title="PNG olarak indir">🖼 PNG</button>
+      <button class="btn" id="exportJsonBtn" data-i18n-title="exportJsonTitle" title="JSON yedeği">⬇ JSON</button>
+      <button class="btn" id="importBtn" data-i18n="importBtn" data-i18n-title="importTitle" title="JSON yükle">⬆ Yükle</button>
+      <button class="btn icon" id="statsBtn" data-i18n-title="statsTitle" title="İstatistikler">📊</button>
+      <button class="btn icon" id="helpBtn" data-i18n-title="helpTitle" title="Yardım (?)">❓</button>
+      <button class="btn icon" id="loadSampleBtn" data-i18n-title="sampleTitle" title="Örnek aile">📋</button>
+      <button class="btn icon danger" id="clearBtn" data-i18n-title="clearTitle" title="Sıfırla">🗑</button>
+      <button class="btn icon" id="langToggleBtn" title="Switch to English">🌐 EN</button>
     </div>
   </header>
 
@@ -277,18 +278,18 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
         </div>
         <div class="empty-state" id="emptyState">
           <div class="icon">🌱</div>
-          <h2>Aile ağacın boş</h2>
-          <p>Yukarıdaki <b style="color:#5fa8f5">+ Kişi</b> ile başla,<br>ya da <b style="color:#66d68c">📋</b> örnek bir aile aç.</p>
+          <h2 data-i18n="emptyTreeTitle">Aile ağacın boş</h2>
+          <p data-i18n="emptyTreeDesc">Yukarıdaki <b style="color:#5fa8f5">+ Kişi</b> ile başla,<br>ya da <b style="color:#66d68c">📋</b> örnek bir aile aç.</p>
         </div>
       </div>
       <!-- Overlay'lar: .canvas-area'ya göre konumlanır, .canvas-wrap scroll yapsa da yerlerinde kalırlar -->
       <div class="zoom-controls">
-        <button class="btn icon" id="zoomInBtn" title="Yakınlaştır (+)">+</button>
+        <button class="btn icon" id="zoomInBtn" data-i18n-title="zoomInTitle" title="Yakınlaştır (+)">+</button>
         <div class="zoom-level" id="zoomLevel">100%</div>
-        <button class="btn icon" id="zoomOutBtn" title="Uzaklaştır (-)">−</button>
-        <button class="btn icon" id="zoomFitBtn" title="Sığdır (0)">⊡</button>
+        <button class="btn icon" id="zoomOutBtn" data-i18n-title="zoomOutTitle" title="Uzaklaştır (-)">−</button>
+        <button class="btn icon" id="zoomFitBtn" data-i18n-title="zoomFitTitle" title="Sığdır (0)">⊡</button>
       </div>
-      <div class="minimap" id="minimap" title="Tıkla: o bölgeye git">
+      <div class="minimap" id="minimap" data-i18n-title="minimapTitle" title="Tıkla: o bölgeye git">
         <canvas id="minimapCanvas" width="180" height="120"></canvas>
         <div class="minimap-viewport" id="minimapViewport"></div>
       </div>
@@ -297,16 +298,16 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-inner">
         <div class="empty-state-side" id="sidebarEmpty">
-          <h3>👈 Bir kişi seç</h3>
-          <p>Canvas'tan birine tıkla ya da yenisini ekle.</p>
+          <h3 data-i18n="sidebarEmptyTitle">👈 Bir kişi seç</h3>
+          <p data-i18n="sidebarEmptyDesc">Canvas'tan birine tıkla ya da yenisini ekle.</p>
           <div class="tip">
-            <b>İpuçları:</b><br>
-            • Kişileri <b>sürükleyerek</b> taşı<br>
-            • Üzerine geldiğinde çıkan <b style="color:#b577da">+</b> butonları ile hızlı ilişki ekle<br>
-            • Bir kişi üzerine gelince akrabaları parlar<br>
-            • <b>Çift tıkla</b>: ismi yerinde düzenle<br>
-            • <b>Fotoğraf:</b> kişi düzenle ya da kart üzerine resim sürükle<br>
-            • <b>Ctrl+Z</b> geri al, <b>Ctrl+F</b> ara, <b>?</b> tüm kısayollar
+            <span data-i18n="sidebarTipsHeader"><b>İpuçları:</b></span><br>
+            • <span data-i18n="sidebarTip1">Kişileri <b>sürükleyerek</b> taşı</span><br>
+            • <span data-i18n="sidebarTip2">Üzerine geldiğinde çıkan <b style="color:#b577da">+</b> butonları ile hızlı ilişki ekle</span><br>
+            • <span data-i18n="sidebarTip3">Bir kişi üzerine gelince akrabaları parlar</span><br>
+            • <span data-i18n="sidebarTip4"><b>Çift tıkla</b>: ismi yerinde düzenle</span><br>
+            • <span data-i18n="sidebarTip5"><b>Fotoğraf:</b> kişi düzenle ya da kart üzerine resim sürükle</span><br>
+            • <span data-i18n="sidebarTip6"><b>Ctrl+Z</b> geri al, <b>Ctrl+F</b> ara, <b>?</b> tüm kısayollar</span>
           </div>
         </div>
         <div id="sidebarContent" style="display:none"></div>
@@ -323,51 +324,51 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 <!-- ===== MODALS ===== -->
 <div class="modal-overlay" id="personModal">
   <div class="modal">
-    <h2 id="personModalTitle">Yeni Kişi</h2>
+    <h2 id="personModalTitle" data-i18n="personModalNew">Yeni Kişi</h2>
     <form id="personForm">
       <div class="form-group">
-        <label>Fotoğraf</label>
+        <label data-i18n="photo">Fotoğraf</label>
         <div class="photo-uploader">
           <div class="photo-preview" id="photoPreview"><span>📷</span></div>
           <div class="photo-actions">
             <input type="file" id="photoInput" accept="image/*" style="display:none">
-            <button type="button" class="btn" id="uploadPhotoBtn">📤 Fotoğraf Seç</button>
-            <button type="button" class="btn danger small" id="removePhotoBtn" style="display:none">Kaldır</button>
-            <div class="help-text">Otomatik olarak 250×250'e küçültülür</div>
+            <button type="button" class="btn" id="uploadPhotoBtn" data-i18n="selectPhoto">📤 Fotoğraf Seç</button>
+            <button type="button" class="btn danger small" id="removePhotoBtn" data-i18n="removePhoto" style="display:none">Kaldır</button>
+            <div class="help-text" data-i18n="photoHelp">Otomatik olarak 250×250'e küçültülür</div>
           </div>
         </div>
       </div>
-      <div class="form-group"><label>İsim *</label><input type="text" name="name" required placeholder="Ad Soyad"></div>
+      <div class="form-group"><label data-i18n="nameLabel">İsim *</label><input type="text" name="name" required data-i18n-placeholder="namePlaceholder" placeholder="Ad Soyad"></div>
       <div class="form-row">
-        <div class="form-group"><label>Cinsiyet</label>
+        <div class="form-group"><label data-i18n="gender">Cinsiyet</label>
           <select name="gender">
-            <option value="male">Erkek</option><option value="female">Kadın</option>
-            <option value="nb">Non-binary</option><option value="other">Belirtilmemiş</option>
+            <option value="male" data-i18n="male">Erkek</option><option value="female" data-i18n="female">Kadın</option>
+            <option value="nb" data-i18n="nonbinary">Non-binary</option><option value="other" data-i18n="unspecified">Belirtilmemiş</option>
           </select>
         </div>
-        <div class="form-group"><label>Renk</label>
+        <div class="form-group"><label data-i18n="color">Renk</label>
           <select name="fam">
-            <option value="demir">🔵 Mavi</option><option value="kaya">🟢 Yeşil</option>
-            <option value="sahin">🟠 Turuncu</option><option value="ozturk">🟣 Mor</option>
-            <option value="pink">🌸 Pembe</option><option value="cyan">💎 Açık mavi</option>
-            <option value="yellow">🟡 Sarı</option><option value="red">🔴 Kırmızı</option>
-            <option value="outsider">⚪ Gri</option>
+            <option value="demir" data-i18n="colorBlue">🔵 Mavi</option><option value="kaya" data-i18n="colorGreen">🟢 Yeşil</option>
+            <option value="sahin" data-i18n="colorOrange">🟠 Turuncu</option><option value="ozturk" data-i18n="colorPurple">🟣 Mor</option>
+            <option value="pink" data-i18n="colorPink">🌸 Pembe</option><option value="cyan" data-i18n="colorCyan">💎 Açık mavi</option>
+            <option value="yellow" data-i18n="colorYellow">🟡 Sarı</option><option value="red" data-i18n="colorRed">🔴 Kırmızı</option>
+            <option value="outsider" data-i18n="colorGray">⚪ Gri</option>
           </select>
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Doğum yılı</label><input type="number" name="dob" placeholder="1950"></div>
-        <div class="form-group"><label>Ölüm yılı</label><input type="number" name="dod" placeholder="boş = hayatta"></div>
+        <div class="form-group"><label data-i18n="birthYear">Doğum yılı</label><input type="number" name="dob" placeholder="1950"></div>
+        <div class="form-group"><label data-i18n="deathYear">Ölüm yılı</label><input type="number" name="dod" data-i18n-placeholder="deathYearPh" placeholder="boş = hayatta"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Doğum yeri</label><input type="text" name="birthPlace" placeholder="İstanbul, Türkiye"></div>
-        <div class="form-group"><label>Ölüm yeri</label><input type="text" name="deathPlace" placeholder=""></div>
+        <div class="form-group"><label data-i18n="birthplace">Doğum yeri</label><input type="text" name="birthPlace" data-i18n-placeholder="birthplacePh" placeholder="İstanbul, Türkiye"></div>
+        <div class="form-group"><label data-i18n="deathplace">Ölüm yeri</label><input type="text" name="deathPlace" placeholder=""></div>
       </div>
-      <div class="form-group"><label>Meslek</label><input type="text" name="occupation" placeholder="Mühendis, doktor..."></div>
-      <div class="form-group"><label>Açıklama / Notlar</label><textarea name="desc" rows="3" placeholder="Hobiler, hikâyeler, ilginç notlar..."></textarea></div>
+      <div class="form-group"><label data-i18n="occupation">Meslek</label><input type="text" name="occupation" data-i18n-placeholder="occupationPh" placeholder="Mühendis, doktor..."></div>
+      <div class="form-group"><label data-i18n="descriptionNotes">Açıklama / Notlar</label><textarea name="desc" rows="3" data-i18n-placeholder="descriptionPh" placeholder="Hobiler, hikâyeler, ilginç notlar..."></textarea></div>
       <div class="modal-actions">
-        <button type="button" class="btn" id="personCancelBtn">İptal</button>
-        <button type="submit" class="btn primary">Kaydet</button>
+        <button type="button" class="btn" id="personCancelBtn" data-i18n="cancel">İptal</button>
+        <button type="submit" class="btn primary" data-i18n="save">Kaydet</button>
       </div>
     </form>
   </div>
@@ -375,23 +376,23 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 
 <div class="modal-overlay" id="unionModal">
   <div class="modal">
-    <h2>💞 Eş / Partner Ekle</h2>
+    <h2 data-i18n="unionModalTitle">💞 Eş / Partner Ekle</h2>
     <form id="unionForm">
-      <div class="form-group"><label>Kim ile?</label><select name="partner" id="unionPartnerSelect"></select></div>
-      <div class="form-group"><label>İlişki türü</label>
+      <div class="form-group"><label data-i18n="whoWith">Kim ile?</label><select name="partner" id="unionPartnerSelect"></select></div>
+      <div class="form-group"><label data-i18n="relType">İlişki türü</label>
         <select name="type" id="unionTypeSelect">
-          <option value="married">💍 Evli</option><option value="divorced">💔 Boşanmış</option>
-          <option value="partner">◇ Nikâhsız partner</option><option value="samesex">⚭ Eşcinsel partner</option>
-          <option value="custom">✦ Özel etiket...</option>
+          <option value="married" data-i18n="married">💍 Evli</option><option value="divorced" data-i18n="divorced">💔 Boşanmış</option>
+          <option value="partner" data-i18n="partnerOpt">◇ Nikâhsız partner</option><option value="samesex" data-i18n="samesexOpt">⚭ Eşcinsel partner</option>
+          <option value="custom" data-i18n="customLabelOpt">✦ Özel etiket...</option>
         </select>
       </div>
       <div class="form-group" id="unionCustomLabelGroup" style="display:none">
-        <label>Özel etiket metni</label>
-        <input type="text" name="customLabel" placeholder="Sözlü, Birlikte yaşıyor, vs.">
+        <label data-i18n="customLabelText">Özel etiket metni</label>
+        <input type="text" name="customLabel" data-i18n-placeholder="customUnionPh" placeholder="Sözlü, Birlikte yaşıyor, vs.">
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn" id="unionCancelBtn">İptal</button>
-        <button type="submit" class="btn primary">Ekle</button>
+        <button type="button" class="btn" id="unionCancelBtn" data-i18n="cancel">İptal</button>
+        <button type="submit" class="btn primary" data-i18n="addAction">Ekle</button>
       </div>
     </form>
   </div>
@@ -399,26 +400,26 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 
 <div class="modal-overlay" id="childModal">
   <div class="modal">
-    <h2>👶 Çocuk Ekle</h2>
+    <h2 data-i18n="childModalTitle">👶 Çocuk Ekle</h2>
     <form id="childForm">
-      <div class="form-group"><label>Diğer ebeveyn (varsa)</label>
+      <div class="form-group"><label data-i18n="otherParent">Diğer ebeveyn (varsa)</label>
         <select name="otherParent" id="childOtherParentSelect"></select>
-        <div class="help-text">Tek ebeveynse "Yok" bırak</div>
+        <div class="help-text" data-i18n="otherParentHelp">Tek ebeveynse "Yok" bırak</div>
       </div>
-      <div class="form-group"><label>Çocuk</label><select name="child" id="childChildSelect"></select></div>
-      <div class="form-group"><label>İlişki türü</label>
+      <div class="form-group"><label data-i18n="childLabel">Çocuk</label><select name="child" id="childChildSelect"></select></div>
+      <div class="form-group"><label data-i18n="relType">İlişki türü</label>
         <select name="type" id="childTypeSelect">
-          <option value="bio">Biyolojik</option><option value="adopted">+ Evlat edinme</option>
-          <option value="surrogate">⚕ Taşıyıcı annelik</option><option value="custom">✦ Özel etiket...</option>
+          <option value="bio" data-i18n="bio">Biyolojik</option><option value="adopted" data-i18n="adopted">+ Evlat edinme</option>
+          <option value="surrogate" data-i18n="surrogate">⚕ Taşıyıcı annelik</option><option value="custom" data-i18n="customLabelOpt">✦ Özel etiket...</option>
         </select>
       </div>
       <div class="form-group" id="childCustomLabelGroup" style="display:none">
-        <label>Özel etiket metni</label>
-        <input type="text" name="customLabel" placeholder="Üvey, Manevi evlat, Vasi olunan...">
+        <label data-i18n="customLabelText">Özel etiket metni</label>
+        <input type="text" name="customLabel" data-i18n-placeholder="customChildPh" placeholder="Üvey, Manevi evlat, Vasi olunan...">
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn" id="childCancelBtn">İptal</button>
-        <button type="submit" class="btn primary">Ekle</button>
+        <button type="button" class="btn" id="childCancelBtn" data-i18n="cancel">İptal</button>
+        <button type="submit" class="btn primary" data-i18n="addAction">Ekle</button>
       </div>
     </form>
   </div>
@@ -426,22 +427,22 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 
 <div class="modal-overlay" id="parentModal">
   <div class="modal">
-    <h2>👨‍👩 Ebeveyn Ekle</h2>
+    <h2 data-i18n="parentModalTitle">👨‍👩 Ebeveyn Ekle</h2>
     <form id="parentForm">
-      <div class="form-group"><label>1. Ebeveyn</label><select name="parent1" id="parent1Select"></select></div>
-      <div class="form-group"><label>2. Ebeveyn (isteğe bağlı)</label><select name="parent2" id="parent2Select"></select></div>
-      <div class="form-group"><label>İlişki türü</label>
+      <div class="form-group"><label data-i18n="parent1">1. Ebeveyn</label><select name="parent1" id="parent1Select"></select></div>
+      <div class="form-group"><label data-i18n="parent2">2. Ebeveyn (isteğe bağlı)</label><select name="parent2" id="parent2Select"></select></div>
+      <div class="form-group"><label data-i18n="relType">İlişki türü</label>
         <select name="type" id="parentTypeSelect">
-          <option value="bio">Biyolojik</option><option value="adopted">+ Evlat edinme</option>
-          <option value="surrogate">⚕ Taşıyıcı annelik</option><option value="custom">✦ Özel etiket...</option>
+          <option value="bio" data-i18n="bio">Biyolojik</option><option value="adopted" data-i18n="adopted">+ Evlat edinme</option>
+          <option value="surrogate" data-i18n="surrogate">⚕ Taşıyıcı annelik</option><option value="custom" data-i18n="customLabelOpt">✦ Özel etiket...</option>
         </select>
       </div>
       <div class="form-group" id="parentCustomLabelGroup" style="display:none">
-        <label>Özel etiket metni</label><input type="text" name="customLabel">
+        <label data-i18n="customLabelText">Özel etiket metni</label><input type="text" name="customLabel">
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn" id="parentCancelBtn">İptal</button>
-        <button type="submit" class="btn primary">Ekle</button>
+        <button type="button" class="btn" id="parentCancelBtn" data-i18n="cancel">İptal</button>
+        <button type="submit" class="btn primary" data-i18n="addAction">Ekle</button>
       </div>
     </form>
   </div>
@@ -449,109 +450,109 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 
 <div class="modal-overlay" id="welcomeModal">
   <div class="modal wide">
-    <h2 style="font-size:22px">🌳 Aile Ağacı Oluşturucu'ya Hoş Geldin</h2>
-    <p style="color:#bbb;font-size:13px;margin:0 0 8px">Tarayıcında çalışan, hiçbir kayıt gerektirmeyen tam bir aile ağacı editörü. Her şey bilgisayarında saklanır.</p>
+    <h2 style="font-size:22px" data-i18n="welcomeTitle">🌳 Aile Ağacı Oluşturucu'ya Hoş Geldin</h2>
+    <p style="color:#bbb;font-size:13px;margin:0 0 8px" data-i18n="welcomeSubtitle">Tarayıcında çalışan, hiçbir kayıt gerektirmeyen tam bir aile ağacı editörü. Her şey bilgisayarında saklanır.</p>
     <div class="welcome-features">
-      <div class="feature-card"><div class="icon">📸</div><h4>Fotoğraf Ekle</h4><p>Her kişiye fotoğraf yükle — sürükle bırak da olur</p></div>
-      <div class="feature-card"><div class="icon">💞</div><h4>Esnek İlişkiler</h4><p>Evli, boşanmış, partner ya da kendi özel etiketin</p></div>
-      <div class="feature-card"><div class="icon">🖼</div><h4>PNG İndir</h4><p>Tüm ağacın fotoğrafını oluştur ve paylaş</p></div>
-      <div class="feature-card"><div class="icon">🔍</div><h4>Hızlı Ara</h4><p>Kalabalık ağaçta isimle anında bul</p></div>
-      <div class="feature-card"><div class="icon">↶</div><h4>Geri Al</h4><p>Ctrl+Z ile yanlışlığa son. 50 adıma kadar</p></div>
-      <div class="feature-card"><div class="icon">💾</div><h4>Otomatik Kayıt</h4><p>Her değişiklik anında tarayıcına kaydedilir</p></div>
+      <div class="feature-card"><div class="icon">📸</div><h4 data-i18n="feature1T">Fotoğraf Ekle</h4><p data-i18n="feature1D">Her kişiye fotoğraf yükle — sürükle bırak da olur</p></div>
+      <div class="feature-card"><div class="icon">💞</div><h4 data-i18n="feature2T">Esnek İlişkiler</h4><p data-i18n="feature2D">Evli, boşanmış, partner ya da kendi özel etiketin</p></div>
+      <div class="feature-card"><div class="icon">🖼</div><h4 data-i18n="feature3T">PNG İndir</h4><p data-i18n="feature3D">Tüm ağacın fotoğrafını oluştur ve paylaş</p></div>
+      <div class="feature-card"><div class="icon">🔍</div><h4 data-i18n="feature4T">Hızlı Ara</h4><p data-i18n="feature4D">Kalabalık ağaçta isimle anında bul</p></div>
+      <div class="feature-card"><div class="icon">↶</div><h4 data-i18n="feature5T">Geri Al</h4><p data-i18n="feature5D">Ctrl+Z ile yanlışlığa son. 50 adıma kadar</p></div>
+      <div class="feature-card"><div class="icon">💾</div><h4 data-i18n="feature6T">Otomatik Kayıt</h4><p data-i18n="feature6D">Her değişiklik anında tarayıcına kaydedilir</p></div>
     </div>
     <div class="modal-actions">
-      <button class="btn" id="welcomeSampleBtn">📋 Örnek Aileyi Aç</button>
-      <button class="btn primary" id="welcomeStartBtn">Sıfırdan Başla →</button>
+      <button class="btn" id="welcomeSampleBtn" data-i18n="loadExampleBtn">📋 Örnek Aileyi Aç</button>
+      <button class="btn primary" id="welcomeStartBtn" data-i18n="startFromScratchBtn">Sıfırdan Başla →</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="statsModal">
   <div class="modal">
-    <h2>📊 İstatistikler</h2>
+    <h2 data-i18n="statsModalTitle">📊 İstatistikler</h2>
     <div id="statsContent"></div>
-    <div class="modal-actions"><button class="btn primary" id="statsCloseBtn">Kapat</button></div>
+    <div class="modal-actions"><button class="btn primary" id="statsCloseBtn" data-i18n="closeBtn">Kapat</button></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="helpModal">
   <div class="modal wide">
-    <h2>❓ Yardım & Kısayollar</h2>
-    <h3 style="color:#aab1c6;font-size:12px;margin:10px 0 6px">Klavye Kısayolları</h3>
+    <h2 data-i18n="helpModalTitle">❓ Yardım & Kısayollar</h2>
+    <h3 style="color:#aab1c6;font-size:12px;margin:10px 0 6px" data-i18n="keyboardShortcuts">Klavye Kısayolları</h3>
     <div class="shortcuts-list">
-      <div class="shortcut"><span>Yeni kişi</span><kbd>Ctrl + N</kbd></div>
-      <div class="shortcut"><span>Ara</span><kbd>Ctrl + F</kbd></div>
-      <div class="shortcut"><span>Geri al</span><kbd>Ctrl + Z</kbd></div>
-      <div class="shortcut"><span>Yeniden yap</span><kbd>Ctrl + Y</kbd></div>
-      <div class="shortcut"><span>Seçileni sil</span><kbd>Del</kbd></div>
-      <div class="shortcut"><span>Seçimi kaldır / kapat</span><kbd>Esc</kbd></div>
-      <div class="shortcut"><span>Yakınlaştır</span><kbd>+</kbd></div>
-      <div class="shortcut"><span>Uzaklaştır</span><kbd>−</kbd></div>
-      <div class="shortcut"><span>Sığdır</span><kbd>0</kbd></div>
-      <div class="shortcut"><span>Yardım</span><kbd>?</kbd></div>
-      <div class="shortcut"><span>İstatistikler</span><kbd>Ctrl + I</kbd></div>
-      <div class="shortcut"><span>PNG İndir</span><kbd>Ctrl + E</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutNewPerson">Yeni kişi</span><kbd>Ctrl + N</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutSearch">Ara</span><kbd>Ctrl + F</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutUndo">Geri al</span><kbd>Ctrl + Z</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutRedo">Yeniden yap</span><kbd>Ctrl + Y</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutDelSel">Seçileni sil</span><kbd>Del</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutEsc">Seçimi kaldır / kapat</span><kbd>Esc</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutZoomIn">Yakınlaştır</span><kbd>+</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutZoomOut">Uzaklaştır</span><kbd>−</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutZoomFit">Sığdır</span><kbd>0</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutHelp">Yardım</span><kbd>?</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutStats">İstatistikler</span><kbd>Ctrl + I</kbd></div>
+      <div class="shortcut"><span data-i18n="shortcutPng">PNG İndir</span><kbd>Ctrl + E</kbd></div>
     </div>
-    <h3 style="color:#aab1c6;font-size:12px;margin:18px 0 6px">Kullanım</h3>
+    <h3 style="color:#aab1c6;font-size:12px;margin:18px 0 6px" data-i18n="usage">Kullanım</h3>
     <ul style="color:#bbb;font-size:12.5px;line-height:1.7;padding-left:18px">
-      <li><b>Sürükle</b>: kişiyi başka yere taşır</li>
-      <li><b style="color:#ff97c4">Kişiyi başka kişinin üzerine sürükle</b>: aralarında ilişki kurar (evli/boşanmış/partner/çocuk/ebeveyn/özel)</li>
-      <li><b style="color:#ffe066">Shift + Sürükle</b>: tek eksen kilidi (yatay veya dikey) — çizgileri düz tutmak için</li>
-      <li><b>Sağ tık</b>: bağlam menüsü (düzenle, sil, eş/çocuk/ebeveyn ekle, odakla)</li>
-      <li><b>Tıkla</b>: kişiyi seçer (sağ panelde detay)</li>
-      <li><b>Çift tıkla</b>: yerinde düzenle</li>
-      <li>Üzerine gelince çıkan <b style="color:#b577da">+ butonları</b>: ebeveyn / eş / çocuk hızlı ekle</li>
-      <li>Bir kişi üstüne gelince <b>akraba parlatma</b> aktifleşir</li>
-      <li>Canvas'a <b>fotoğraf dosyası sürükle</b>: hedef kişiye yükler</li>
-      <li>Mouse tekerleği: <b>zoom</b> (her zaman, Ctrl gerekmez)</li>
-      <li>Boş alana <b>tıkla-sürükle</b> veya <b>orta tuş</b>: pan</li>
+      <li data-i18n="usage1"><b>Sürükle</b>: kişiyi başka yere taşır</li>
+      <li data-i18n="usage2"><b style="color:#ff97c4">Kişiyi başka kişinin üzerine sürükle</b>: aralarında ilişki kurar (evli/boşanmış/partner/çocuk/ebeveyn/özel)</li>
+      <li data-i18n="usage3"><b style="color:#ffe066">Shift + Sürükle</b>: tek eksen kilidi (yatay veya dikey) — çizgileri düz tutmak için</li>
+      <li data-i18n="usage4"><b>Sağ tık</b>: bağlam menüsü (düzenle, sil, eş/çocuk/ebeveyn ekle, odakla)</li>
+      <li data-i18n="usage5"><b>Tıkla</b>: kişiyi seçer (sağ panelde detay)</li>
+      <li data-i18n="usage6"><b>Çift tıkla</b>: yerinde düzenle</li>
+      <li data-i18n="usage7">Üzerine gelince çıkan <b style="color:#b577da">+ butonları</b>: ebeveyn / eş / çocuk hızlı ekle</li>
+      <li data-i18n="usage8">Bir kişi üstüne gelince <b>akraba parlatma</b> aktifleşir</li>
+      <li data-i18n="usage9">Canvas'a <b>fotoğraf dosyası sürükle</b>: hedef kişiye yükler</li>
+      <li data-i18n="usage10">Mouse tekerleği: <b>zoom</b> (her zaman, Ctrl gerekmez)</li>
+      <li data-i18n="usage11">Boş alana <b>tıkla-sürükle</b> veya <b>orta tuş</b>: pan</li>
     </ul>
-    <div class="modal-actions"><button class="btn primary" id="helpCloseBtn">Kapat</button></div>
+    <div class="modal-actions"><button class="btn primary" id="helpCloseBtn" data-i18n="closeBtn">Kapat</button></div>
   </div>
 </div>
 
 <!-- Drag-to-connect modal -->
 <div class="modal-overlay" id="connectModal">
   <div class="modal">
-    <h2>🔗 Bağlantı Kur</h2>
+    <h2 data-i18n="connectModalTitle">🔗 Bağlantı Kur</h2>
     <div class="connect-preview" id="connectPreview"></div>
-    <div class="help-text" style="margin-bottom:14px;text-align:center">Bu iki kişi arasında nasıl bir bağ kurulsun?</div>
+    <div class="help-text" style="margin-bottom:14px;text-align:center" data-i18n="connectHelp">Bu iki kişi arasında nasıl bir bağ kurulsun?</div>
     <div class="connect-grid">
-      <button class="conn-btn" data-rel="married"><span class="conn-icon">💍</span><b>Evli</b></button>
-      <button class="conn-btn" data-rel="divorced"><span class="conn-icon">💔</span><b>Boşanmış</b></button>
-      <button class="conn-btn" data-rel="partner"><span class="conn-icon">◇</span><b>Partner</b></button>
-      <button class="conn-btn" data-rel="samesex"><span class="conn-icon">⚭</span><b>Eşcinsel partner</b></button>
-      <button class="conn-btn" data-rel="child-of-source"><span class="conn-icon">⬇</span><b>Hedef, kaynağın ÇOCUĞU</b><div class="conn-sub" id="connectChildSub"></div></button>
-      <button class="conn-btn" data-rel="parent-of-source"><span class="conn-icon">⬆</span><b>Hedef, kaynağın EBEVEYNİ</b><div class="conn-sub" id="connectParentSub"></div></button>
-      <button class="conn-btn" data-rel="sibling"><span class="conn-icon">👫</span><b>Kardeş yap</b><div class="conn-sub">aynı ebeveynleri paylaşır</div></button>
-      <button class="conn-btn" data-rel="custom"><span class="conn-icon">✦</span><b>Özel etiket...</b></button>
+      <button class="conn-btn" data-rel="married"><span class="conn-icon">💍</span><b data-i18n="connMarried">Evli</b></button>
+      <button class="conn-btn" data-rel="divorced"><span class="conn-icon">💔</span><b data-i18n="connDivorced">Boşanmış</b></button>
+      <button class="conn-btn" data-rel="partner"><span class="conn-icon">◇</span><b data-i18n="connPartner">Partner</b></button>
+      <button class="conn-btn" data-rel="samesex"><span class="conn-icon">⚭</span><b data-i18n="connSamesex">Eşcinsel partner</b></button>
+      <button class="conn-btn" data-rel="child-of-source"><span class="conn-icon">⬇</span><b data-i18n="connChild">Hedef, kaynağın ÇOCUĞU</b><div class="conn-sub" id="connectChildSub"></div></button>
+      <button class="conn-btn" data-rel="parent-of-source"><span class="conn-icon">⬆</span><b data-i18n="connParent">Hedef, kaynağın EBEVEYNİ</b><div class="conn-sub" id="connectParentSub"></div></button>
+      <button class="conn-btn" data-rel="sibling"><span class="conn-icon">👫</span><b data-i18n="connSibling">Kardeş yap</b><div class="conn-sub" data-i18n="connSiblingDesc">aynı ebeveynleri paylaşır</div></button>
+      <button class="conn-btn" data-rel="custom"><span class="conn-icon">✦</span><b data-i18n="connCustom">Özel etiket...</b></button>
     </div>
     <div id="connectCustomGroup" style="display:none">
       <div class="form-group">
-        <label>Özel etiket</label>
-        <input type="text" id="connectCustomLabel" placeholder="Örn: Üvey kardeş, manevi evlat...">
+        <label data-i18n="customLabelText">Özel etiket</label>
+        <input type="text" id="connectCustomLabel" data-i18n-placeholder="connCustomPh" placeholder="Örn: Üvey kardeş, manevi evlat...">
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn" id="connectCustomCancelBtn">Geri</button>
-        <button type="button" class="btn primary" id="connectCustomSubmitBtn">Bağla</button>
+        <button type="button" class="btn" id="connectCustomCancelBtn" data-i18n="back">Geri</button>
+        <button type="button" class="btn primary" id="connectCustomSubmitBtn" data-i18n="connectAction">Bağla</button>
       </div>
     </div>
     <div class="modal-actions" id="connectMainActions">
-      <button type="button" class="btn" id="connectCancelBtn">İptal</button>
+      <button type="button" class="btn" id="connectCancelBtn" data-i18n="cancel">İptal</button>
     </div>
   </div>
 </div>
 
 <!-- Sağ-tık bağlam menüsü -->
 <div id="contextMenu" class="context-menu">
-  <button data-act="edit">✎ Düzenle</button>
-  <button data-act="add-spouse">💞 Eş / Partner ekle</button>
-  <button data-act="add-child">👶 Çocuk ekle</button>
-  <button data-act="add-parent">👨‍👩 Ebeveyn ekle</button>
+  <button data-act="edit" data-i18n="ctxEdit">✎ Düzenle</button>
+  <button data-act="add-spouse" data-i18n="ctxAddSpouse">💞 Eş / Partner ekle</button>
+  <button data-act="add-child" data-i18n="ctxAddChild">👶 Çocuk ekle</button>
+  <button data-act="add-parent" data-i18n="ctxAddParent">👨‍👩 Ebeveyn ekle</button>
   <div class="menu-divider"></div>
-  <button data-act="focus">🎯 Sadece akrabaları göster</button>
+  <button data-act="focus" data-i18n="ctxFocus">🎯 Sadece akrabaları göster</button>
   <div class="menu-divider"></div>
-  <button data-act="delete" class="danger">🗑 Sil</button>
+  <button data-act="delete" class="danger" data-i18n="ctxDelete">🗑 Sil</button>
 </div>
 
 <!-- Shift kilit göstergesi -->
@@ -560,6 +561,297 @@ svg.lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:n
 <input type="file" id="importFile" accept=".json" style="display:none">
 
 <script>
+//=================================================================
+// LANGUAGE / i18n
+//=================================================================
+const LANG_KEY='app_lang_v1';
+// Her anahtar [TR, EN] dizisi. $1,$2... yer tutucu olarak kullanılır.
+const T={
+  // ===== Header & toolbar =====
+  brand: ['🌳 Aile Ağacı','🌳 Family Tree'],
+  searchPh: ['İsme göre ara...','Search by name...'],
+  undoTitle: ['Geri al (Ctrl+Z)','Undo (Ctrl+Z)'],
+  redoTitle: ['Yeniden yap (Ctrl+Y)','Redo (Ctrl+Y)'],
+  addPersonBtn: ['+ Kişi','+ Person'],
+  addPersonTitle: ['Yeni kişi (Ctrl+N)','New person (Ctrl+N)'],
+  layoutSelectTitle: ['Düzen tipi','Layout type'],
+  layoutTopDown: ['↓ Yukarıdan','↓ Top-down'],
+  layoutLeftRight: ['→ Soldan sağa','→ Left-to-right'],
+  rearrangeBtn: ['⊞ Düzenle','⊞ Arrange'],
+  rearrangeTitle: ['Otomatik düzenle','Auto-arrange'],
+  exportPngTitle: ['PNG olarak indir','Download as PNG'],
+  exportJsonTitle: ['JSON yedeği','JSON backup'],
+  importBtn: ['⬆ Yükle','⬆ Import'],
+  importTitle: ['JSON yükle','Import JSON'],
+  statsTitle: ['İstatistikler','Statistics'],
+  helpTitle: ['Yardım (?)','Help (?)'],
+  sampleTitle: ['Örnek aile','Example family'],
+  clearTitle: ['Sıfırla','Reset'],
+  langToTr: ['Türkçe','Turkish'],
+  langToEn: ['English','English'],
+  // ===== Empty state =====
+  emptyTreeTitle: ['Aile ağacın boş','Your family tree is empty'],
+  emptyTreeDesc: ['Yukarıdaki <b style="color:#5fa8f5">+ Kişi</b> ile başla,<br>ya da <b style="color:#66d68c">📋</b> örnek bir aile aç.','Click <b style="color:#5fa8f5">+ Person</b> above to start,<br>or <b style="color:#66d68c">📋</b> to load an example.'],
+  // ===== Zoom & minimap =====
+  zoomInTitle: ['Yakınlaştır (+)','Zoom in (+)'],
+  zoomOutTitle: ['Uzaklaştır (-)','Zoom out (-)'],
+  zoomFitTitle: ['Sığdır (0)','Fit (0)'],
+  minimapTitle: ['Tıkla: o bölgeye git','Click: navigate to area'],
+  // ===== Sidebar =====
+  sidebarEmptyTitle: ['👈 Bir kişi seç','👈 Select a person'],
+  sidebarEmptyDesc: ['Canvas\'tan birine tıkla ya da yenisini ekle.','Click someone on the canvas or add a new person.'],
+  sidebarTipsHeader: ['<b>İpuçları:</b>','<b>Tips:</b>'],
+  sidebarTip1: ['Kişileri <b>sürükleyerek</b> taşı','<b>Drag</b> to move people'],
+  sidebarTip2: ['Üzerine geldiğinde çıkan <b style="color:#b577da">+</b> butonları ile hızlı ilişki ekle','Use <b style="color:#b577da">+</b> buttons on hover for quick relations'],
+  sidebarTip3: ['Bir kişi üzerine gelince akrabaları parlar','Hover a person to highlight their relatives'],
+  sidebarTip4: ['<b>Çift tıkla</b>: ismi yerinde düzenle','<b>Double-click</b>: edit in place'],
+  sidebarTip5: ['<b>Fotoğraf:</b> kişi düzenle ya da kart üzerine resim sürükle','<b>Photo:</b> edit person or drag image onto card'],
+  sidebarTip6: ['<b>Ctrl+Z</b> geri al, <b>Ctrl+F</b> ara, <b>?</b> tüm kısayollar','<b>Ctrl+Z</b> undo, <b>Ctrl+F</b> search, <b>?</b> all shortcuts'],
+  spousesAndPartners: ['Eşler & Partnerler','Spouses & Partners'],
+  parentsLbl: ['Ebeveynler','Parents'],
+  childrenLbl: ['Çocuklar','Children'],
+  notYetAdded: ['Henüz eklenmedi','Not yet added'],
+  addSpousePartner: ['+ Eş / Partner Ekle','+ Add Spouse / Partner'],
+  addParent: ['+ Ebeveyn Ekle','+ Add Parent'],
+  addChild: ['+ Çocuk Ekle','+ Add Child'],
+  editBtn: ['✎ Düzenle','✎ Edit'],
+  deleteBtn: ['🗑 Sil','🗑 Delete'],
+  renameHint: ['Çift tıkla: düzenle','Double-click: edit'],
+  delTooltip: ['Sil','Delete'],
+  removeBondTooltip: ['Bağı kaldır','Remove bond'],
+  // ===== Person modal =====
+  personModalNew: ['Yeni Kişi','New Person'],
+  personModalEdit: ['✎ Kişi Düzenle','✎ Edit Person'],
+  photo: ['Fotoğraf','Photo'],
+  selectPhoto: ['📤 Fotoğraf Seç','📤 Select Photo'],
+  removePhoto: ['Kaldır','Remove'],
+  photoHelp: ['Otomatik olarak 250×250\'e küçültülür','Auto-resized to 250×250'],
+  nameLabel: ['İsim *','Name *'],
+  namePlaceholder: ['Ad Soyad','Full Name'],
+  gender: ['Cinsiyet','Gender'],
+  male: ['Erkek','Male'],
+  female: ['Kadın','Female'],
+  nonbinary: ['Non-binary','Non-binary'],
+  unspecified: ['Belirtilmemiş','Unspecified'],
+  color: ['Renk','Color'],
+  colorBlue: ['🔵 Mavi','🔵 Blue'],
+  colorGreen: ['🟢 Yeşil','🟢 Green'],
+  colorOrange: ['🟠 Turuncu','🟠 Orange'],
+  colorPurple: ['🟣 Mor','🟣 Purple'],
+  colorPink: ['🌸 Pembe','🌸 Pink'],
+  colorCyan: ['💎 Açık mavi','💎 Cyan'],
+  colorYellow: ['🟡 Sarı','🟡 Yellow'],
+  colorRed: ['🔴 Kırmızı','🔴 Red'],
+  colorGray: ['⚪ Gri','⚪ Gray'],
+  birthYear: ['Doğum yılı','Birth year'],
+  deathYear: ['Ölüm yılı','Death year'],
+  birthYearPh: ['1950','1950'],
+  deathYearPh: ['boş = hayatta','empty = alive'],
+  birthplace: ['Doğum yeri','Birthplace'],
+  birthplacePh: ['İstanbul, Türkiye','New York, USA'],
+  deathplace: ['Ölüm yeri','Place of death'],
+  occupation: ['Meslek','Occupation'],
+  occupationPh: ['Mühendis, doktor...','Engineer, doctor...'],
+  descriptionNotes: ['Açıklama / Notlar','Description / Notes'],
+  descriptionPh: ['Hobiler, hikâyeler, ilginç notlar...','Hobbies, stories, notes...'],
+  cancel: ['İptal','Cancel'],
+  save: ['Kaydet','Save'],
+  // ===== Union modal =====
+  unionModalTitle: ['💞 Eş / Partner Ekle','💞 Add Spouse / Partner'],
+  whoWith: ['Kim ile?','With whom?'],
+  addNewPerson: ['+ Yeni kişi ekle...','+ Add new person...'],
+  relType: ['İlişki türü','Relationship type'],
+  married: ['💍 Evli','💍 Married'],
+  divorced: ['💔 Boşanmış','💔 Divorced'],
+  partnerOpt: ['◇ Nikâhsız partner','◇ Unmarried partner'],
+  samesexOpt: ['⚭ Eşcinsel partner','⚭ Same-sex partner'],
+  customLabelOpt: ['✦ Özel etiket...','✦ Custom label...'],
+  customLabelText: ['Özel etiket metni','Custom label text'],
+  customUnionPh: ['Sözlü, Birlikte yaşıyor, vs.','Engaged, Living together, etc.'],
+  addAction: ['Ekle','Add'],
+  // ===== Child modal =====
+  childModalTitle: ['👶 Çocuk Ekle','👶 Add Child'],
+  otherParent: ['Diğer ebeveyn (varsa)','Other parent (if any)'],
+  noOtherParent: ['Yok (tek ebeveyn)','None (single parent)'],
+  otherParentHelp: ['Tek ebeveynse "Yok" bırak','If single parent, leave "None"'],
+  childLabel: ['Çocuk','Child'],
+  bio: ['Biyolojik','Biological'],
+  adopted: ['+ Evlat edinme','+ Adopted'],
+  surrogate: ['⚕ Taşıyıcı annelik','⚕ Surrogate'],
+  customChildPh: ['Üvey, Manevi evlat, Vasi olunan...','Step-child, foster, guardian...'],
+  // ===== Parent modal =====
+  parentModalTitle: ['👨‍👩 Ebeveyn Ekle','👨‍👩 Add Parent'],
+  parent1: ['1. Ebeveyn','1st Parent'],
+  parent2: ['2. Ebeveyn (isteğe bağlı)','2nd Parent (optional)'],
+  // ===== Welcome modal =====
+  welcomeTitle: ['🌳 Aile Ağacı Oluşturucu\'ya Hoş Geldin','🌳 Welcome to Family Tree Builder'],
+  welcomeSubtitle: ['Tarayıcında çalışan, hiçbir kayıt gerektirmeyen tam bir aile ağacı editörü. Her şey bilgisayarında saklanır.','A full family tree editor that runs in your browser. No signup needed. Everything is stored locally.'],
+  feature1T: ['Fotoğraf Ekle','Add Photos'],
+  feature1D: ['Her kişiye fotoğraf yükle — sürükle bırak da olur','Add a photo to each person — drag & drop works'],
+  feature2T: ['Esnek İlişkiler','Flexible Relations'],
+  feature2D: ['Evli, boşanmış, partner ya da kendi özel etiketin','Married, divorced, partner, or your own custom label'],
+  feature3T: ['PNG İndir','Download PNG'],
+  feature3D: ['Tüm ağacın fotoğrafını oluştur ve paylaş','Generate and share a snapshot of your tree'],
+  feature4T: ['Hızlı Ara','Quick Search'],
+  feature4D: ['Kalabalık ağaçta isimle anında bul','Find anyone instantly by name'],
+  feature5T: ['Geri Al','Undo'],
+  feature5D: ['Ctrl+Z ile yanlışlığa son. 50 adıma kadar','Ctrl+Z reverts mistakes. Up to 50 steps.'],
+  feature6T: ['Otomatik Kayıt','Auto-save'],
+  feature6D: ['Her değişiklik anında tarayıcına kaydedilir','Every change is saved to your browser instantly'],
+  loadExampleBtn: ['📋 Örnek Aileyi Aç','📋 Load Example'],
+  startFromScratchBtn: ['Sıfırdan Başla →','Start From Scratch →'],
+  // ===== Stats modal =====
+  statsModalTitle: ['📊 İstatistikler','📊 Statistics'],
+  statTotalPeople: ['Toplam kişi','Total people'],
+  statMarriages: ['Evlilik','Marriages'],
+  statDivorces: ['Boşanma','Divorces'],
+  statDeceased: ['Vefat eden','Deceased'],
+  statBonds: ['Ebeveyn-çocuk bağı','Parent-child bonds'],
+  statAvgLife: ['Ort. ömür (vefat edenlerde)','Avg. lifespan (deceased)'],
+  oldestLiving: ['En büyük yaşayan:','Oldest living:'],
+  youngest: ['En genç:','Youngest:'],
+  closeBtn: ['Kapat','Close'],
+  // ===== Help modal =====
+  helpModalTitle: ['❓ Yardım & Kısayollar','❓ Help & Shortcuts'],
+  keyboardShortcuts: ['Klavye Kısayolları','Keyboard Shortcuts'],
+  shortcutNewPerson: ['Yeni kişi','New person'],
+  shortcutSearch: ['Ara','Search'],
+  shortcutUndo: ['Geri al','Undo'],
+  shortcutRedo: ['Yeniden yap','Redo'],
+  shortcutDelSel: ['Seçileni sil','Delete selected'],
+  shortcutEsc: ['Seçimi kaldır / kapat','Deselect / close'],
+  shortcutZoomIn: ['Yakınlaştır','Zoom in'],
+  shortcutZoomOut: ['Uzaklaştır','Zoom out'],
+  shortcutZoomFit: ['Sığdır','Fit'],
+  shortcutHelp: ['Yardım','Help'],
+  shortcutStats: ['İstatistikler','Statistics'],
+  shortcutPng: ['PNG İndir','Download PNG'],
+  usage: ['Kullanım','Usage'],
+  usage1: ['<b>Sürükle</b>: kişiyi başka yere taşır','<b>Drag</b>: move a person'],
+  usage2: ['<b style="color:#ff97c4">Kişiyi başka kişinin üzerine sürükle</b>: aralarında ilişki kurar (evli/boşanmış/partner/çocuk/ebeveyn/özel)','<b style="color:#ff97c4">Drop on another person</b>: create relationship (married/divorced/partner/child/parent/custom)'],
+  usage3: ['<b style="color:#ffe066">Shift + Sürükle</b>: tek eksen kilidi (yatay veya dikey) — çizgileri düz tutmak için','<b style="color:#ffe066">Shift + Drag</b>: single-axis lock — keeps lines straight'],
+  usage4: ['<b>Sağ tık</b>: bağlam menüsü (düzenle, sil, eş/çocuk/ebeveyn ekle, odakla)','<b>Right-click</b>: context menu (edit, delete, add relations, focus)'],
+  usage5: ['<b>Tıkla</b>: kişiyi seçer (sağ panelde detay)','<b>Click</b>: select person (details in sidebar)'],
+  usage6: ['<b>Çift tıkla</b>: yerinde düzenle','<b>Double-click</b>: edit in place'],
+  usage7: ['Üzerine gelince çıkan <b style="color:#b577da">+ butonları</b>: ebeveyn / eş / çocuk hızlı ekle','Hover <b style="color:#b577da">+ buttons</b>: quick-add parent / spouse / child'],
+  usage8: ['Bir kişi üstüne gelince <b>akraba parlatma</b> aktifleşir','Hovering highlights all relatives'],
+  usage9: ['Canvas\'a <b>fotoğraf dosyası sürükle</b>: hedef kişiye yükler','Drag a <b>photo file</b> onto a person: uploads it'],
+  usage10: ['Mouse tekerleği: <b>zoom</b> (her zaman, Ctrl gerekmez)','Mouse wheel: <b>zoom</b> (always, no Ctrl needed)'],
+  usage11: ['Boş alana <b>tıkla-sürükle</b> veya <b>orta tuş</b>: pan','Click-drag empty area or <b>middle mouse</b>: pan'],
+  // ===== Connect modal =====
+  connectModalTitle: ['🔗 Bağlantı Kur','🔗 Create Connection'],
+  connectHelp: ['Bu iki kişi arasında nasıl bir bağ kurulsun?','How should these two be connected?'],
+  connMarried: ['Evli','Married'],
+  connDivorced: ['Boşanmış','Divorced'],
+  connPartner: ['Partner','Partner'],
+  connSamesex: ['Eşcinsel partner','Same-sex partner'],
+  connChild: ['Hedef, kaynağın ÇOCUĞU','Target = source\'s CHILD'],
+  connParent: ['Hedef, kaynağın EBEVEYNİ','Target = source\'s PARENT'],
+  connSibling: ['Kardeş yap','Make sibling'],
+  connSiblingDesc: ['aynı ebeveynleri paylaşır','shares parents with source'],
+  connCustom: ['Özel etiket...','Custom label...'],
+  connCustomPh: ['Örn: Üvey kardeş, manevi evlat...','e.g. Step-sibling, foster child...'],
+  back: ['Geri','Back'],
+  connectAction: ['Bağla','Connect'],
+  // ===== Context menu =====
+  ctxEdit: ['✎ Düzenle','✎ Edit'],
+  ctxAddSpouse: ['💞 Eş / Partner ekle','💞 Add spouse / partner'],
+  ctxAddChild: ['👶 Çocuk ekle','👶 Add child'],
+  ctxAddParent: ['👨‍👩 Ebeveyn ekle','👨‍👩 Add parent'],
+  ctxFocus: ['🎯 Sadece akrabaları göster','🎯 Show only relatives'],
+  ctxDelete: ['🗑 Sil','🗑 Delete'],
+  // ===== Status =====
+  statusFmt: ['$1 kişi · $2 ilişki · $3 ebeveyn-çocuk bağı','$1 people · $2 relationships · $3 parent-child bonds'],
+  saved: ['✓ Kaydedildi','✓ Saved'],
+  saving: ['⏳ Kaydediliyor...','⏳ Saving...'],
+  storageFull: ['⚠ Depolama dolu!','⚠ Storage full!'],
+  // ===== Shift / drop hints =====
+  shiftHorizontal: ['⇄ Yatay kilit (Shift)','⇄ Horizontal lock (Shift)'],
+  shiftVertical: ['⇅ Dikey kilit (Shift)','⇅ Vertical lock (Shift)'],
+  // ===== Relation type texts in sidebar =====
+  utextMarried: ['💍 Evli','💍 Married'],
+  utextDivorced: ['💔 Boşanmış','💔 Divorced'],
+  utextPartner: ['◇ Partner','◇ Partner'],
+  utextSamesex: ['⚭ Eşcinsel partner','⚭ Same-sex partner'],
+  utextCustom: ['✦ Özel','✦ Custom'],
+  ftextBio: ['Biyolojik','Biological'],
+  ftextAdopted: ['+ Evlat edinme','+ Adopted'],
+  ftextSurrogate: ['⚕ Taşıyıcı annelik','⚕ Surrogate'],
+  ftextCustom: ['✦ Özel','✦ Custom'],
+  // ===== Family fam labels =====
+  famDemir: ['Mavi','Blue'],
+  famKaya: ['Yeşil','Green'],
+  famSahin: ['Turuncu','Orange'],
+  famOzturk: ['Mor','Purple'],
+  famOutsider: ['Aileye katılan','In-law / Outsider'],
+  famMixed: ['Karma soy','Mixed'],
+  famPink: ['Pembe','Pink'],
+  famCyan: ['Açık mavi','Cyan'],
+  famYellow: ['Sarı','Yellow'],
+  famRed: ['Kırmızı','Red'],
+  // ===== Validation warnings =====
+  warningHeader: ['⚠ <b>Dikkat:</b>','⚠ <b>Warning:</b>'],
+  warnDeathBeforeBirth: ['Ölüm yılı ($1) doğumdan ($2) önce.','Death year ($1) before birth year ($2).'],
+  warnAge120: ['Yaş 120\'den fazla görünüyor ($1).','Age over 120 ($1).'],
+  warnChildBeforeParent: ['$1 doğumdan sonra ($2) çocuk doğmuş gibi ($3).','Child born ($3) before parent $1 (born $2).'],
+  searchNoResults: ['Sonuç yok','No results'],
+  // ===== Confirms =====
+  confirmDeletePerson: ['"$1" silinsin mi? Tüm ilişkileri de silinir.','Delete "$1"? All their relationships will be removed.'],
+  confirmDeletePersonShort: ['"$1" silinsin mi?','Delete "$1"?'],
+  confirmClearAll: ['Tüm ağaç silinsin mi? Geri alınamaz.','Delete entire tree? Cannot be undone.'],
+  confirmSampleOverwrite: ['Mevcut ağaç silinip örnek aile yüklensin mi?','Replace current tree with example family?'],
+  confirmImport: ['Mevcut ağaç değişsin mi?','Overwrite current tree?'],
+  // ===== Alerts =====
+  alertInvalidJson: ['Geçersiz dosya.','Invalid file.'],
+  alertJsonRead: ['JSON okunamadı: ','Failed to read JSON: '],
+  alertEmptyTree: ['Ağaç boş!','Tree is empty!'],
+  alertPhotoFail: ['Fotoğraf okunamadı.','Failed to read photo.'],
+  alertEmptyLabel: ['Lütfen bir etiket yazın','Please enter a label'],
+  alertSiblingNoParents: ['Kardeş ilişkisi için önce kaynağın ebeveynleri olmalı.','For sibling relation, source needs parents first.'],
+  alertStorageFull: ['localStorage dolu. Lütfen JSON\'a dışa aktar ve fotoğrafları küçült.','localStorage full. Please export to JSON and reduce photos.'],
+  promptNewName: ['Yeni isim:','New name:'],
+  unnamed: ['İsimsiz','Unnamed'],
+  // ===== Sidebar misc =====
+  bondsLbl: ['Bağlar:','Bonds:'],
+  newPersonSpouse: ['+ Yeni Kişi (Eş/Partner)','+ New Person (Spouse/Partner)'],
+  newPersonChild: ['+ Yeni Kişi (Çocuk)','+ New Person (Child)'],
+  newPersonParent: ['+ Yeni Kişi (Ebeveyn)','+ New Person (Parent)'],
+  newPersonParent2: ['+ Yeni Kişi (2. Ebeveyn)','+ New Person (2nd Parent)'],
+};
+
+let currentLang;
+function detectLanguage(){
+  const saved=localStorage.getItem(LANG_KEY);
+  if(saved==='tr'||saved==='en')return saved;
+  const br=(navigator.language||'tr').toLowerCase();
+  return br.startsWith('en')?'en':'tr';
+}
+function t(key,...args){
+  const e=T[key];
+  if(!e)return key;
+  let s=e[currentLang==='en'?1:0]||e[0]||key;
+  args.forEach((a,i)=>{s=s.split('$'+(i+1)).join(a);});
+  return s;
+}
+function setLanguage(lang){
+  currentLang=lang;
+  localStorage.setItem(LANG_KEY,lang);
+  applyTranslations();
+  if(typeof renderAll==='function')renderAll();
+}
+function applyTranslations(){
+  document.documentElement.lang=currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.innerHTML=t(el.dataset.i18n);});
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{el.title=t(el.dataset.i18nTitle);});
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder);});
+  const btn=document.getElementById('langToggleBtn');
+  if(btn){
+    btn.textContent=currentLang==='tr'?'🌐 EN':'🌐 TR';
+    btn.title=currentLang==='tr'?'Switch to English':'Türkçeye geç';
+  }
+}
+currentLang=detectLanguage();
+
 //=================================================================
 // STATE & STORAGE
 //=================================================================
@@ -572,16 +864,16 @@ let suppressHistory=false;
 
 function saveState(){
   document.getElementById('saveIndicator').classList.add('saving');
-  document.getElementById('saveIndicator').textContent='⏳ Kaydediliyor...';
+  document.getElementById('saveIndicator').textContent=t('saving');
   try{
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
     setTimeout(()=>{
       document.getElementById('saveIndicator').classList.remove('saving');
-      document.getElementById('saveIndicator').textContent='✓ Kaydedildi';
+      document.getElementById('saveIndicator').textContent=t('saved');
     },200);
   }catch(e){
-    document.getElementById('saveIndicator').textContent='⚠ Depolama dolu!';
-    alert('localStorage dolu. Lütfen JSON\'a dışa aktar ve fotoğrafları küçült.');
+    document.getElementById('saveIndicator').textContent=t('storageFull');
+    alert(t('alertStorageFull'));
   }
 }
 function loadState(){
@@ -719,11 +1011,11 @@ function compressImage(file,maxSize=250){
 // Tree validation
 function validatePerson(p){
   const warns=[];
-  if(p.dob&&p.dod&&p.dod<p.dob)warns.push(`Ölüm yılı (${p.dod}) doğumdan (${p.dob}) önce.`);
-  if(p.dob&&p.dod&&p.dod-p.dob>120)warns.push(`Yaş 120'den fazla görünüyor (${p.dod-p.dob}).`);
+  if(p.dob&&p.dod&&p.dod<p.dob)warns.push(t('warnDeathBeforeBirth',p.dod,p.dob));
+  if(p.dob&&p.dod&&p.dod-p.dob>120)warns.push(t('warnAge120',p.dod-p.dob));
   getParentsOf(p.id).forEach(pid=>{
     const par=peopleById(pid);
-    if(par&&par.dob&&p.dob&&p.dob<=par.dob)warns.push(`${par.name} doğumdan sonra (${par.dob}) çocuk doğmuş gibi (${p.dob}).`);
+    if(par&&par.dob&&p.dob&&p.dob<=par.dob)warns.push(t('warnChildBeforeParent',par.name,par.dob,p.dob));
   });
   return warns;
 }
@@ -909,7 +1201,7 @@ function makePath(d,opts={}){
 }
 
 function updateStatus(){
-  document.getElementById('statusInfo').textContent=`${state.people.length} kişi · ${state.unions.length} ilişki · ${state.families.length} ebeveyn-çocuk bağı`;
+  document.getElementById('statusInfo').textContent=t('statusFmt',state.people.length,state.unions.length,state.families.length);
 }
 
 //=================================================================
@@ -967,74 +1259,74 @@ function renderSidebar(){
   const unions=getUnionsOf(p.id);
   const ini=initials(p.name);
   const yearLabel=p.dod?`${p.dob||'?'} – ${p.dod}`:(p.dob?`${p.dob} –`:'');
-  const utext={married:'💍 Evli',divorced:'💔 Boşanmış',partner:'◇ Partner',samesex:'⚭ Eşcinsel partner',custom:'✦ Özel'};
-  const ftext={bio:'Biyolojik',adopted:'+ Evlat edinme',surrogate:'⚕ Taşıyıcı annelik',custom:'✦ Özel'};
+  const utext={married:t('utextMarried'),divorced:t('utextDivorced'),partner:t('utextPartner'),samesex:t('utextSamesex'),custom:t('utextCustom')};
+  const ftext={bio:t('ftextBio'),adopted:t('ftextAdopted'),surrogate:t('ftextSurrogate'),custom:t('ftextCustom')};
   const photoStyle=p.photo?`background-image:url('${p.photo}')`:'';
   const warns=validatePerson(p);
-  const warnHtml=warns.length?`<div class="warning-box">⚠ <b>Dikkat:</b><br>${warns.map(escapeHtml).join('<br>')}</div>`:'';
+  const warnHtml=warns.length?`<div class="warning-box">${t('warningHeader')}<br>${warns.map(escapeHtml).join('<br>')}</div>`:'';
   const renderMini=x=>{
     const ph=x.photo?`background-image:url('${x.photo}')`:'';
     return `<div class="mini-avatar ${x.fam} ${x.gender}" style="${ph}">${x.photo?'':initials(x.name)}</div>`;
   };
   const unionHtml=unions.map(u=>{
     const o=peopleById(u.a===p.id?u.b:u.a);if(!o)return '';
-    const lbl=u.type==='custom'?(u.customLabel||'Özel'):(utext[u.type]||u.type);
-    return `<div class="rel-item">${renderMini(o)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${o.id}">${escapeHtml(o.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-union" data-id="${u.id}" title="Sil">×</button></div>`;
+    const lbl=u.type==='custom'?(u.customLabel||t('utextCustom')):(utext[u.type]||u.type);
+    return `<div class="rel-item">${renderMini(o)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${o.id}">${escapeHtml(o.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-union" data-id="${u.id}" title="${t('delTooltip')}">×</button></div>`;
   }).join('');
   const parentHtml=parents.map(par=>{
     const fa=state.families.find(f=>f.parents.includes(par.id)&&f.child===p.id);
-    const lbl=fa?(fa.type==='custom'?(fa.customLabel||'Özel'):(ftext[fa.type]||fa.type)):'';
-    return `<div class="rel-item">${renderMini(par)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${par.id}">${escapeHtml(par.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-pc" data-parent="${par.id}" data-child="${p.id}" title="Bağı kaldır">×</button></div>`;
+    const lbl=fa?(fa.type==='custom'?(fa.customLabel||t('ftextCustom')):(ftext[fa.type]||fa.type)):'';
+    return `<div class="rel-item">${renderMini(par)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${par.id}">${escapeHtml(par.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-pc" data-parent="${par.id}" data-child="${p.id}" title="${t('removeBondTooltip')}">×</button></div>`;
   }).join('');
   const childHtml=children.map(c=>{
     const fa=state.families.find(f=>f.child===c.id&&f.parents.includes(p.id));
-    const lbl=fa?(fa.type==='custom'?(fa.customLabel||'Özel'):(ftext[fa.type]||fa.type)):'';
-    return `<div class="rel-item">${renderMini(c)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${c.id}">${escapeHtml(c.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-pc" data-parent="${p.id}" data-child="${c.id}" title="Bağı kaldır">×</button></div>`;
+    const lbl=fa?(fa.type==='custom'?(fa.customLabel||t('ftextCustom')):(ftext[fa.type]||fa.type)):'';
+    return `<div class="rel-item">${renderMini(c)}<div class="rel-info"><div class="rel-name" data-action="select" data-id="${c.id}">${escapeHtml(c.name)}</div><div class="rel-type">${escapeHtml(lbl)}</div></div><button class="btn small danger" data-action="del-pc" data-parent="${p.id}" data-child="${c.id}" title="${t('removeBondTooltip')}">×</button></div>`;
   }).join('');
   const fieldRow=(l,v)=>v?`<div class="field-row"><span class="field-label">${l}</span><span class="field-value">${escapeHtml(v)}</span></div>`:'';
   sidebarContentEl.innerHTML=`
     <div class="person-card">
       <div class="avatar ${p.fam} ${p.gender} ${p.photo?'with-photo':''}" style="${photoStyle}">${p.photo?'':ini}${p.dead?'<div class="dead-badge">✝</div>':''}</div>
-      <div class="name editable" data-action="rename" title="Çift tıkla: düzenle">${escapeHtml(p.name)}</div>
+      <div class="name editable" data-action="rename" title="${t('renameHint')}">${escapeHtml(p.name)}</div>
       <div class="dates">${yearLabel}</div>
-      ${fieldRow('Meslek',p.occupation)}
-      ${fieldRow('Doğum yeri',p.birthPlace)}
-      ${fieldRow('Ölüm yeri',p.deathPlace)}
+      ${fieldRow(t('occupation'),p.occupation)}
+      ${fieldRow(t('birthplace'),p.birthPlace)}
+      ${fieldRow(t('deathplace'),p.deathPlace)}
       ${p.desc?`<div class="desc">${escapeHtml(p.desc)}</div>`:''}
       ${warnHtml}
       <div class="actions">
-        <button class="btn" data-action="edit-person">✎ Düzenle</button>
-        <button class="btn danger" data-action="delete-person">🗑 Sil</button>
+        <button class="btn" data-action="edit-person">${t('editBtn')}</button>
+        <button class="btn danger" data-action="delete-person">${t('deleteBtn')}</button>
       </div>
     </div>
     <div class="sidebar-section">
-      <h3>Eşler & Partnerler (${unions.length})</h3>
-      <div class="rel-list">${unionHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">Henüz eklenmedi</div>'}</div>
-      <button class="btn primary rel-add-btn" data-action="add-union">+ Eş / Partner Ekle</button>
+      <h3>${t('spousesAndPartners')} (${unions.length})</h3>
+      <div class="rel-list">${unionHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">'+t('notYetAdded')+'</div>'}</div>
+      <button class="btn primary rel-add-btn" data-action="add-union">${t('addSpousePartner')}</button>
     </div>
     <div class="sidebar-section">
-      <h3>Ebeveynler (${parents.length})</h3>
-      <div class="rel-list">${parentHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">Henüz eklenmedi</div>'}</div>
-      <button class="btn primary rel-add-btn" data-action="add-parent">+ Ebeveyn Ekle</button>
+      <h3>${t('parentsLbl')} (${parents.length})</h3>
+      <div class="rel-list">${parentHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">'+t('notYetAdded')+'</div>'}</div>
+      <button class="btn primary rel-add-btn" data-action="add-parent">${t('addParent')}</button>
     </div>
     <div class="sidebar-section">
-      <h3>Çocuklar (${children.length})</h3>
-      <div class="rel-list">${childHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">Henüz eklenmedi</div>'}</div>
-      <button class="btn primary rel-add-btn" data-action="add-child">+ Çocuk Ekle</button>
+      <h3>${t('childrenLbl')} (${children.length})</h3>
+      <div class="rel-list">${childHtml||'<div style="font-size:11px;color:#888;text-align:center;padding:8px">'+t('notYetAdded')+'</div>'}</div>
+      <button class="btn primary rel-add-btn" data-action="add-child">${t('addChild')}</button>
     </div>`;
 }
 
 sidebarContentEl.addEventListener('click',e=>{
-  const t=e.target.closest('[data-action]');if(!t)return;
-  const a=t.dataset.action;
+  const btn=e.target.closest('[data-action]');if(!btn)return;
+  const a=btn.dataset.action;
   switch(a){
-    case 'select':selectPerson(t.dataset.id);break;
+    case 'select':selectPerson(btn.dataset.id);break;
     case 'edit-person':openEditPerson(selectedId);break;
     case 'delete-person':
-      if(confirm(`"${peopleById(selectedId).name}" silinsin mi?`)){deletePerson(selectedId);renderAll();}
+      if(confirm(t('confirmDeletePersonShort',peopleById(selectedId).name))){deletePerson(selectedId);renderAll();}
       break;
-    case 'del-union':deleteUnion(t.dataset.id);renderAll();break;
-    case 'del-pc':removeParentChild(t.dataset.parent,t.dataset.child);renderAll();break;
+    case 'del-union':deleteUnion(btn.dataset.id);renderAll();break;
+    case 'del-pc':removeParentChild(btn.dataset.parent,btn.dataset.child);renderAll();break;
     case 'add-union':openUnionModal(selectedId);break;
     case 'add-parent':openParentModal(selectedId);break;
     case 'add-child':openChildModal(selectedId);break;
@@ -1045,7 +1337,7 @@ sidebarContentEl.addEventListener('click',e=>{
 function inlineEditName(id){
   const p=peopleById(id);if(!p)return;
   const el=sidebarContentEl.querySelector('.name.editable');if(!el)return;
-  const newName=prompt('Yeni isim:',p.name);
+  const newName=prompt(t('promptNewName'),p.name);
   if(newName!==null&&newName.trim()){updatePerson(id,{name:newName.trim()});renderAll();}
 }
 
@@ -1105,10 +1397,10 @@ function setupPersonInteractions(el,p){
     if(e.shiftKey&&moved){
       if(Math.abs(dx)>Math.abs(dy)){
         dy=0;
-        shiftHint.textContent='⇄ Yatay kilit (Shift)';
+        shiftHint.textContent=t('shiftHorizontal');
       }else{
         dx=0;
-        shiftHint.textContent='⇅ Dikey kilit (Shift)';
+        shiftHint.textContent=t('shiftVertical');
       }
       shiftHint.classList.add('show');
     }else{
@@ -1124,7 +1416,7 @@ function setupPersonInteractions(el,p){
     el.style.pointerEvents='';
     const tg=below?below.closest('.person'):null;
     if(tg&&tg!==el&&tg.dataset.id!==p.id){
-      if(dropTarget!==tg){clearDropTarget();dropTarget=tg;dropTarget.classList.add('drop-target');}
+      if(dropTarget!==tg){clearDropTarget();dropTarget=tg;dropTarget.classList.add('drop-target');dropTarget.setAttribute('data-drop-hint',t('dropConnect'));}
     }else{
       clearDropTarget();
     }
@@ -1250,12 +1542,12 @@ document.getElementById('uploadPhotoBtn').addEventListener('click',()=>photoInpu
 document.getElementById('removePhotoBtn').addEventListener('click',()=>setPhotoPreview(null));
 photoInput.addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
-  try{setPhotoPreview(await compressImage(f));}catch(err){alert('Fotoğraf okunamadı.');}
+  try{setPhotoPreview(await compressImage(f));}catch(err){alert(t('alertPhotoFail'));}
 });
 
 function openPersonModal(title,cb){
   editingPersonId=null;onPersonSavedCallback=cb||null;
-  personModalTitle.textContent=title||'Yeni Kişi';
+  personModalTitle.textContent=title||t('personModalNew');
   personForm.reset();setPhotoPreview(null);
   personModal.classList.add('open');
   setTimeout(()=>personForm.elements['name'].focus(),50);
@@ -1263,7 +1555,7 @@ function openPersonModal(title,cb){
 function openEditPerson(id){
   const p=peopleById(id);if(!p)return;
   editingPersonId=id;onPersonSavedCallback=null;
-  personModalTitle.textContent='✎ Kişi Düzenle';
+  personModalTitle.textContent=t('personModalEdit');
   personForm.elements['name'].value=p.name;
   personForm.elements['gender'].value=p.gender;
   personForm.elements['fam'].value=p.fam;
@@ -1281,7 +1573,7 @@ personForm.addEventListener('submit',e=>{
   e.preventDefault();
   const fd=new FormData(personForm);
   const d={
-    name:(fd.get('name')||'').trim()||'İsimsiz',
+    name:(fd.get('name')||'').trim()||t('unnamed'),
     gender:fd.get('gender'),fam:fd.get('fam'),
     dob:fd.get('dob')?parseInt(fd.get('dob')):null,
     dod:fd.get('dod')?parseInt(fd.get('dod')):null,
@@ -1311,7 +1603,7 @@ let unionForPersonId=null;
 function openUnionModal(id){
   unionForPersonId=id;
   const sel=document.getElementById('unionPartnerSelect');
-  sel.innerHTML='<option value="__new__">+ Yeni kişi ekle...</option>';
+  sel.innerHTML='<option value="__new__">'+t('addNewPerson')+'</option>';
   state.people.filter(p=>p.id!==id).forEach(p=>{sel.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;});
   document.getElementById('unionTypeSelect').value='married';
   document.getElementById('unionCustomLabelGroup').style.display='none';
@@ -1329,7 +1621,7 @@ unionForm.addEventListener('submit',e=>{
   const fin=pid=>{addUnion(unionForPersonId,pid,type,lbl||null);unionModal.classList.remove('open');renderAll();};
   if(pV==='__new__'){
     unionModal.classList.remove('open');
-    openPersonModal('+ Yeni Kişi (Eş/Partner)',newP=>{
+    openPersonModal(t('newPersonSpouse'),newP=>{
       const c=peopleById(unionForPersonId);if(c){newP.x=c.x+140;newP.y=c.y;saveState();}
       fin(newP.id);
     });
@@ -1343,7 +1635,7 @@ let childForPersonId=null;
 function openChildModal(id){
   childForPersonId=id;
   const o=document.getElementById('childOtherParentSelect');
-  o.innerHTML='<option value="">Yok (tek ebeveyn)</option>';
+  o.innerHTML='<option value="">'+t('noOtherParent')+'</option>';
   state.people.filter(p=>p.id!==id).forEach(p=>{o.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;});
   const sp=getSpousesOf(id);if(sp.length)o.value=sp[sp.length-1];
   const c=document.getElementById('childChildSelect');
@@ -1366,7 +1658,7 @@ childForm.addEventListener('submit',e=>{
   const fin=cid=>{addFamily(parents,cid,tp,lbl||null);childModal.classList.remove('open');renderAll();};
   if(cv==='__new__'){
     childModal.classList.remove('open');
-    openPersonModal('+ Yeni Kişi (Çocuk)',newP=>{
+    openPersonModal(t('newPersonChild'),newP=>{
       const po=parents.map(peopleById).filter(Boolean);
       if(po.length){
         newP.x=po.reduce((s,p)=>s+p.x,0)/po.length;
@@ -1384,8 +1676,8 @@ let parentForPersonId=null;
 function openParentModal(id){
   parentForPersonId=id;
   const s1=document.getElementById('parent1Select'),s2=document.getElementById('parent2Select');
-  s1.innerHTML='<option value="__new__">+ Yeni kişi ekle...</option>';
-  s2.innerHTML='<option value="">Yok (tek ebeveyn)</option><option value="__new__">+ Yeni kişi ekle...</option>';
+  s1.innerHTML='<option value="__new__">'+t('addNewPerson')+'</option>';
+  s2.innerHTML='<option value="">'+t('noOtherParent')+'</option><option value="__new__">'+t('addNewPerson')+'</option>';
   state.people.filter(p=>p.id!==id).forEach(p=>{
     s1.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;
     s2.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name)}</option>`;
@@ -1411,7 +1703,7 @@ parentForm.addEventListener('submit',e=>{
   const h1=cb=>{
     if(p1v==='__new__'){
       parentModal.classList.remove('open');
-      openPersonModal('+ Yeni Kişi (Ebeveyn)',newP=>{
+      openPersonModal(t('newPersonParent'),newP=>{
         const ch=peopleById(parentForPersonId);
         if(ch){newP.x=ch.x;newP.y=Math.max(0,ch.y-250);saveState();}
         cb(newP.id);
@@ -1421,7 +1713,7 @@ parentForm.addEventListener('submit',e=>{
   const h2=(p1,cb)=>{
     if(p2v==='__new__'){
       parentModal.classList.remove('open');
-      openPersonModal('+ Yeni Kişi (2. Ebeveyn)',newP=>{
+      openPersonModal(t('newPersonParent2'),newP=>{
         const p1obj=peopleById(p1);
         if(p1obj){newP.x=p1obj.x+140;newP.y=p1obj.y;saveState();}
         cb(newP.id);
@@ -1452,10 +1744,10 @@ function openConnectModal(sourceId,targetId){
   };
   document.getElementById('connectPreview').innerHTML=renderMini(src)+'<div class="arrow">↔</div>'+renderMini(tgt);
 
-  // Alt-açıklamalar: çocuk/ebeveyn seçildiğinde co-parent var mı belirt
+  // Alt-açıklamalar
   const srcSpouses=getSpousesOf(sourceId);
   const srcSpouseName=srcSpouses.length?(peopleById(srcSpouses[0])||{}).name:null;
-  document.getElementById('connectChildSub').textContent=srcSpouseName?`Ebeveyn olarak ${src.name} + ${srcSpouseName}`:'';
+  document.getElementById('connectChildSub').textContent=srcSpouseName?(currentLang==='en'?`Co-parents: ${src.name} + ${srcSpouseName}`:`Ebeveyn olarak ${src.name} + ${srcSpouseName}`):'';
   const srcParents=getParentsOf(sourceId);
   const srcParentName=srcParents.length?(peopleById(srcParents[0])||{}).name:null;
   document.getElementById('connectParentSub').textContent=srcParentName?`Co-parent: ${srcParentName}`:'';
@@ -1481,7 +1773,7 @@ document.querySelectorAll('.conn-btn').forEach(btn=>{
 
 document.getElementById('connectCustomSubmitBtn').addEventListener('click',()=>{
   const lbl=document.getElementById('connectCustomLabel').value.trim();
-  if(!lbl){alert('Lütfen bir etiket yazın');return;}
+  if(!lbl){alert(t('alertEmptyLabel'));return;}
   applyConnection(connectSourceId,connectTargetId,'custom',lbl);
 });
 document.getElementById('connectCustomLabel').addEventListener('keydown',e=>{
@@ -1514,7 +1806,7 @@ function applyConnection(sourceId,targetId,rel,customLabel){
     // Hedef, kaynak ile aynı ebeveynleri paylaşır
     const sourceParents=getParentsOf(sourceId);
     if(sourceParents.length===0){
-      alert('Kardeş ilişkisi için önce kaynağın ebeveynleri olmalı.');
+      alert(t('alertSiblingNoParents'));
       return;
     }
     addFamily(Array.from(new Set(sourceParents)).slice(0,2),targetId,'bio');
@@ -1549,7 +1841,7 @@ contextMenu.addEventListener('click',e=>{
   else if(a==='add-parent')openParentModal(ctxPersonId);
   else if(a==='focus'){applyFocus(ctxPersonId);}
   else if(a==='delete'){
-    if(confirm(`"${peopleById(ctxPersonId).name}" silinsin mi?`)){
+    if(confirm(t('confirmDeletePersonShort',peopleById(ctxPersonId).name))){
       deletePerson(ctxPersonId);renderAll();
     }
   }
@@ -1567,7 +1859,7 @@ function performSearch(){
   if(!q){searchResults.classList.remove('open');return;}
   const matches=state.people.filter(p=>p.name.toLowerCase().includes(q)||(p.occupation||'').toLowerCase().includes(q)||(p.birthPlace||'').toLowerCase().includes(q)).slice(0,8);
   if(!matches.length){
-    searchResults.innerHTML='<div style="padding:12px;color:#888;font-size:12px;text-align:center">Sonuç yok</div>';
+    searchResults.innerHTML='<div style="padding:12px;color:#888;font-size:12px;text-align:center">'+t('searchNoResults')+'</div>';
     searchResults.classList.add('open');return;
   }
   searchResults.innerHTML=matches.map((p,i)=>{
@@ -1604,11 +1896,11 @@ document.addEventListener('click',e=>{
 //=================================================================
 // TOOLBAR
 //=================================================================
-document.getElementById('addPersonBtn').addEventListener('click',()=>openPersonModal('+ Yeni Kişi'));
+document.getElementById('addPersonBtn').addEventListener('click',()=>openPersonModal());
 document.getElementById('undoBtn').addEventListener('click',undo);
 document.getElementById('redoBtn').addEventListener('click',redo);
 document.getElementById('clearBtn').addEventListener('click',()=>{
-  if(state.people.length>0&&!confirm('Tüm ağaç silinsin mi? Geri alınamaz.'))return;
+  if(state.people.length>0&&!confirm(t('confirmClearAll')))return;
   pushHistory();
   state={people:[],unions:[],families:[],nextId:1};selectedId=null;saveState();renderAll();
 });
@@ -1629,12 +1921,12 @@ document.getElementById('importFile').addEventListener('change',e=>{
     try{
       const d=JSON.parse(ev.target.result);
       if(d.people&&Array.isArray(d.people)){
-        if(state.people.length>0&&!confirm('Mevcut ağaç değişsin mi?'))return;
+        if(state.people.length>0&&!confirm(t('confirmImport')))return;
         pushHistory();
         state={people:d.people||[],unions:d.unions||[],families:d.families||[],nextId:d.nextId||1};
         selectedId=null;saveState();renderAll();
-      }else alert('Geçersiz dosya.');
-    }catch(err){alert('JSON okunamadı: '+err.message);}
+      }else alert(t('alertInvalidJson'));
+    }catch(err){alert(t('alertJsonRead')+err.message);}
   };
   r.readAsText(f);e.target.value='';
 });
@@ -1661,15 +1953,15 @@ function showStats(){
   const youngest=state.people.filter(p=>p.dob).reduce((a,b)=>(a&&a.dob>b.dob)?a:b,null);
   document.getElementById('statsContent').innerHTML=`
     <div class="stats-grid">
-      <div class="stat-card"><div class="num">${n}</div><div class="label">Toplam kişi</div></div>
-      <div class="stat-card"><div class="num">${m}</div><div class="label">Evlilik</div></div>
-      <div class="stat-card"><div class="num">${div}</div><div class="label">Boşanma</div></div>
-      <div class="stat-card"><div class="num">${dead}</div><div class="label">Vefat eden</div></div>
-      <div class="stat-card"><div class="num">${state.families.length}</div><div class="label">Ebeveyn-çocuk bağı</div></div>
-      <div class="stat-card"><div class="num">${avgAge||'—'}</div><div class="label">Ort. ömür (vefat edenlerde)</div></div>
+      <div class="stat-card"><div class="num">${n}</div><div class="label">${t('statTotalPeople')}</div></div>
+      <div class="stat-card"><div class="num">${m}</div><div class="label">${t('statMarriages')}</div></div>
+      <div class="stat-card"><div class="num">${div}</div><div class="label">${t('statDivorces')}</div></div>
+      <div class="stat-card"><div class="num">${dead}</div><div class="label">${t('statDeceased')}</div></div>
+      <div class="stat-card"><div class="num">${state.families.length}</div><div class="label">${t('statBonds')}</div></div>
+      <div class="stat-card"><div class="num">${avgAge||'—'}</div><div class="label">${t('statAvgLife')}</div></div>
     </div>
-    ${oldest?`<div style="margin-top:14px;padding:10px;background:rgba(95,168,245,.1);border-radius:8px;font-size:12.5px">En büyük yaşayan: <b>${escapeHtml(oldest.name)}</b> (${oldest.dob})</div>`:''}
-    ${youngest?`<div style="margin-top:6px;padding:10px;background:rgba(102,214,155,.1);border-radius:8px;font-size:12.5px">En genç: <b>${escapeHtml(youngest.name)}</b> (${youngest.dob})</div>`:''}
+    ${oldest?`<div style="margin-top:14px;padding:10px;background:rgba(95,168,245,.1);border-radius:8px;font-size:12.5px">${t('oldestLiving')} <b>${escapeHtml(oldest.name)}</b> (${oldest.dob})</div>`:''}
+    ${youngest?`<div style="margin-top:6px;padding:10px;background:rgba(102,214,155,.1);border-radius:8px;font-size:12.5px">${t('youngest')} <b>${escapeHtml(youngest.name)}</b> (${youngest.dob})</div>`:''}
   `;
   document.getElementById('statsModal').classList.add('open');
 }
@@ -1692,7 +1984,7 @@ document.getElementById('welcomeSampleBtn').addEventListener('click',()=>{
 // PNG EXPORT (custom canvas renderer)
 //=================================================================
 async function exportAsPng(){
-  if(!state.people.length){alert('Ağaç boş!');return;}
+  if(!state.people.length){alert(t('alertEmptyTree'));return;}
   const pad=60;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   state.people.forEach(p=>{
@@ -1945,7 +2237,7 @@ function autoArrange(silent){
 // SAMPLE — Demo amaçlı kurgusal aile (Yılmaz ailesi)
 //=================================================================
 function loadSample(silent){
-  if(!silent&&state.people.length>0&&!confirm('Mevcut ağaç silinip örnek aile yüklensin mi?'))return;
+  if(!silent&&state.people.length>0&&!confirm(t('confirmSampleOverwrite')))return;
   if(!silent)pushHistory();
   state={people:[],unions:[],families:[],nextId:1};selectedId=null;
   suppressHistory=true;
@@ -1994,14 +2286,14 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
     selectPerson(null);searchResults.classList.remove('open');
-  }else if(ctrl&&e.key.toLowerCase()==='n'){e.preventDefault();openPersonModal('+ Yeni Kişi');}
+  }else if(ctrl&&e.key.toLowerCase()==='n'){e.preventDefault();openPersonModal();}
   else if(ctrl&&e.key.toLowerCase()==='f'){e.preventDefault();searchInput.focus();}
   else if(ctrl&&e.key.toLowerCase()==='z'){e.preventDefault();undo();}
   else if(ctrl&&(e.key.toLowerCase()==='y'||(e.key.toLowerCase()==='z'&&e.shiftKey))){e.preventDefault();redo();}
   else if(ctrl&&e.key.toLowerCase()==='i'){e.preventDefault();showStats();}
   else if(ctrl&&e.key.toLowerCase()==='e'){e.preventDefault();exportAsPng();}
   else if(e.key==='Delete'&&selectedId){
-    if(confirm(`"${peopleById(selectedId).name}" silinsin mi?`)){deletePerson(selectedId);renderAll();}
+    if(confirm(t('confirmDeletePersonShort',peopleById(selectedId).name))){deletePerson(selectedId);renderAll();}
   }else if(e.key==='+'||e.key==='='){setZoom(view.scale*1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2);}
   else if(e.key==='-'||e.key==='_'){setZoom(view.scale/1.2,canvasWrap.clientWidth/2,canvasWrap.clientHeight/2);}
   else if(e.key==='0'){fitToView();}
@@ -2009,25 +2301,30 @@ document.addEventListener('keydown',e=>{
 });
 
 //=================================================================
+// LANG TOGGLE
+//=================================================================
+document.getElementById('langToggleBtn').addEventListener('click',()=>{
+  setLanguage(currentLang==='tr'?'en':'tr');
+});
+
+//=================================================================
 // INIT
 //=================================================================
 loadState();
-// İlk açılışta baba tarafı aile ağacını otomatik yükle (kullanıcı UI'dan girmiş gibi)
 const TREE_LOADED_KEY='paternal_family_tree_loaded_v1';
 const LAYOUT_FIXED_KEY='layout_bottom_up_applied_v1';
 if(!localStorage.getItem(TREE_LOADED_KEY)){
-  // Hiç yüklenmemiş — ağacı kur ve düzenle
   loadSample(true);
   localStorage.setItem(TREE_LOADED_KEY,'1');
   localStorage.setItem(LAYOUT_FIXED_KEY,'1');
-  localStorage.setItem(WELCOME_KEY,'1'); // hoş geldin modalını da atla
+  localStorage.setItem(WELCOME_KEY,'1');
 }else if(!localStorage.getItem(LAYOUT_FIXED_KEY)&&state.people.length>0){
-  // Mevcut veriler var ama yeni bottom-up algoritma uygulanmamış — bir kere uygula
   suppressHistory=true;
   autoArrange(true);
   suppressHistory=false;
   localStorage.setItem(LAYOUT_FIXED_KEY,'1');
 }
+applyTranslations();
 renderAll();
 updateUndoRedoButtons();
 if(!localStorage.getItem(WELCOME_KEY)&&state.people.length===0){
