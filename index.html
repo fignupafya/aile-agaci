@@ -2734,34 +2734,44 @@ function autoArrange(silent){
   if(!state.people.length)return;
   if(!silent)pushHistory();
 
-  const COUPLE_W=250;     // bir çiftin (iki avatar yan yana) toplam slot genişliği
-  const SINGLE_W=140;     // bekar / tek kişi slot genişliği
+  const PERSON_SLOT=110;  // bir satırdaki ardışık kişi merkezleri arası mesafe
+  const SINGLE_W=140;     // bekar / tek kişi slot genişliği (kenar boşluğu dahil)
   const SIBLING_GAP=30;   // kardeş alt-ağaçları arası yatay boşluk
   const GEN_H=380;        // nesiller arası dikey mesafe
   const START_X=80;
   const START_Y=80;
 
+  // Bir kişinin kendi satır genişliği: M + yanına dizilecek eşleri.
+  // Yalnızca ebeveyni OLMAYAN eşler M'nin satırına girer; ebeveyni olan eş
+  // (kuzen evliliği) kendi soyunda durur, evlilik çizgisi uzaktan bağlanır.
+  // 0 eş → 140 (SINGLE_W) · 1 eş → 250 · 2 eş → 360 ...
+  function rowSpousesOf(personId){
+    return getSpousesOf(personId).filter(sid=>{
+      const sp=peopleById(sid);
+      return sp&&getParentsOf(sid).length===0;
+    });
+  }
+  function ownWidthOf(personId){
+    const n=1+rowSpousesOf(personId).length;
+    return Math.max(SINGLE_W,n*PERSON_SLOT+30);
+  }
+
   // ===== 1) Kök kişileri tespit et =====
-  // Bir "kök ana" kişi: ebeveyni olmayan ve ya kendisi soyağacının başı, ya da eşi de köktür.
-  // "Yalnızca eş" olanlar (ebeveyni yok ama eşinin ebeveyni var) kök sayılmaz, eşi pozisyonlanırken yerleşirler.
+  // Kök ana: ebeveyni olmayan kişi. "Yalnızca eş" (ebeveyni yok ama eşinin ebeveyni var)
+  // kök sayılmaz — partneri yerleştirilirken pozisyonlanır.
+  // ÖNEMLİ: bir kök bulununca onun TÜM eşleri processed işaretlenir; böylece çok eşli
+  // kişinin ikinci/üçüncü eşi ayrı bir kök olarak sağa fırlamaz.
   const processed=new Set();
   const rootMains=[];
   state.people.forEach(p=>{
     if(processed.has(p.id))return;
-    if(getParentsOf(p.id).length>0)return;
+    if(getParentsOf(p.id).length>0)return; // ebeveyni var → kök değil, soydan biri
     const spouses=getSpousesOf(p.id);
     const spouseWithParents=spouses.find(sid=>getParentsOf(sid).length>0);
-    if(spouseWithParents){processed.add(p.id);return;} // yalnızca eş; partneri yerleştirirken pozisyonlanacak
-    const rootSpouse=spouses.find(sid=>getParentsOf(sid).length===0&&!processed.has(sid));
-    if(rootSpouse){
-      processed.add(p.id);processed.add(rootSpouse);
-      // Ana taraf çocukları olan kişi
-      const pHasKids=getChildrenOf(p.id).length>0;
-      rootMains.push(pHasKids?p.id:(getChildrenOf(rootSpouse).length>0?rootSpouse:p.id));
-    }else{
-      processed.add(p.id);
-      rootMains.push(p.id);
-    }
+    if(spouseWithParents){processed.add(p.id);return;} // yalnızca eş
+    processed.add(p.id);
+    spouses.forEach(sid=>processed.add(sid)); // tüm eşleri de işaretle
+    rootMains.push(p.id);
   });
 
   // ===== 2) Alt-ağaç genişliklerini bottom-up hesapla =====
@@ -2771,56 +2781,62 @@ function autoArrange(silent){
     if(widthCache.has(personId))return widthCache.get(personId);
     if(visiting.has(personId))return SINGLE_W; // döngü koruması
     visiting.add(personId);
-    const spouses=getSpousesOf(personId);
-    const ownWidth=spouses.length>0?COUPLE_W:SINGLE_W;
     const childIds=getChildrenOf(personId);
     let childrenTotal=0;
     childIds.forEach((cid,i)=>{
       if(i>0)childrenTotal+=SIBLING_GAP;
       childrenTotal+=subtreeWidth(cid);
     });
-    const w=Math.max(ownWidth,childrenTotal);
+    const w=Math.max(ownWidthOf(personId),childrenTotal);
     widthCache.set(personId,w);
     visiting.delete(personId);
     return w;
   }
   rootMains.forEach(subtreeWidth);
 
-  // ===== 3) Top-down pozisyon ataması (genişlikler bilindiği için artık iç içe giremez) =====
+  // ===== 3) Top-down pozisyon ataması =====
   const placedIds=new Set();
   function positionSubtree(personId,leftX,y){
     if(placedIds.has(personId))return;
     placedIds.add(personId);
     const w=widthCache.get(personId)||SINGLE_W;
     const centerX=leftX+w/2;
-    const person=peopleById(personId);
-    const spouses=getSpousesOf(personId);
-    const spouseToShow=spouses.find(sid=>!placedIds.has(sid));
-    if(spouseToShow){
-      placedIds.add(spouseToShow);
-      const spouse=peopleById(spouseToShow);
-      // Soydan gelen tarafı sol, "dışarıdan" eş (?) sağa koy
-      const pIsDesc=getParentsOf(personId).length>0;
-      const sIsDesc=getParentsOf(spouseToShow).length>0;
-      let leftP,rightP;
-      if(pIsDesc&&!sIsDesc){leftP=person;rightP=spouse;}
-      else if(!pIsDesc&&sIsDesc){leftP=spouse;rightP=person;}
-      else{leftP=person;rightP=spouse;}
-      leftP.x=centerX-110;leftP.y=y;
-      rightP.x=centerX;rightP.y=y;
-    }else{
-      person.x=centerX-55;person.y=y;
-    }
-    const childIds=getChildrenOf(personId);
-    if(!childIds.length)return;
-    const childWs=childIds.map(cid=>widthCache.get(cid)||SINGLE_W);
-    let totalChildren=0;
-    childWs.forEach((cw,i)=>{
-      if(i>0)totalChildren+=SIBLING_GAP;
-      totalChildren+=cw;
+
+    // M + henüz yerleşmemiş satır-eşlerini tek satıra diz (M ortada)
+    const unplacedSpouses=rowSpousesOf(personId).filter(sid=>!placedIds.has(sid));
+    const half=Math.floor(unplacedSpouses.length/2);
+    const before=unplacedSpouses.slice(0,half);
+    const after=unplacedSpouses.slice(half);
+    const row=[...before,personId,...after];
+    const firstCenter=centerX-((row.length-1)*PERSON_SLOT)/2;
+    row.forEach((pid,i)=>{
+      const pp=peopleById(pid);if(!pp)return;
+      pp.x=firstCenter+i*PERSON_SLOT-55;
+      pp.y=y;
+      placedIds.add(pid);
     });
+
+    // Çocukları evlilik sırasına göre grupla (aynı evliliğin çocukları yan yana)
+    const allKids=getChildrenOf(personId);
+    if(!allKids.length)return;
+    const seen=new Set();const orderedKids=[];
+    // Önce satırdaki eş sırasına göre, sonra kalan eşler (cousin eşler vb.)
+    const spouseSeq=[...before,...after,...getSpousesOf(personId).filter(s=>!before.includes(s)&&!after.includes(s))];
+    spouseSeq.forEach(sid=>{
+      state.families.forEach(f=>{
+        if(f.child&&!seen.has(f.child)&&allKids.includes(f.child)
+           &&f.parents.includes(personId)&&f.parents.includes(sid)){
+          seen.add(f.child);orderedKids.push(f.child);
+        }
+      });
+    });
+    allKids.forEach(cid=>{if(!seen.has(cid)){seen.add(cid);orderedKids.push(cid);}}); // tek ebeveynli vs.
+
+    const childWs=orderedKids.map(cid=>widthCache.get(cid)||SINGLE_W);
+    let totalChildren=0;
+    childWs.forEach((cw,i)=>{if(i>0)totalChildren+=SIBLING_GAP;totalChildren+=cw;});
     let childX=centerX-totalChildren/2;
-    childIds.forEach((cid,i)=>{
+    orderedKids.forEach((cid,i)=>{
       if(i>0)childX+=SIBLING_GAP;
       positionSubtree(cid,childX,y+GEN_H);
       childX+=childWs[i];
@@ -2835,11 +2851,33 @@ function autoArrange(silent){
     curX+=w+100;
   });
 
-  // Yetim kişileri (ağaçtan kopuk) sağ kenara koy
+  // ===== 5) Yerleşmeyen kişileri akrabalarının yanına yerleştir (relaxation) =====
+  // Sağ üste fırlatmak yerine: yerleşmiş eş/çocuk/ebeveyne göre konumla. Çok geçişli.
+  let changed=true,guard=0;
+  while(changed&&guard++<15){
+    changed=false;
+    state.people.forEach(p=>{
+      if(placedIds.has(p.id))return;
+      const sp=getSpousesOf(p.id).map(peopleById).find(s=>s&&placedIds.has(s.id));
+      if(sp){p.x=sp.x+PERSON_SLOT;p.y=sp.y;placedIds.add(p.id);changed=true;return;}
+      const kids=getChildrenOf(p.id).map(peopleById).filter(k=>k&&placedIds.has(k.id));
+      if(kids.length){
+        p.x=kids.reduce((s,k)=>s+k.x,0)/kids.length;
+        p.y=Math.min(...kids.map(k=>k.y))-GEN_H;
+        placedIds.add(p.id);changed=true;return;
+      }
+      const par=getParentsOf(p.id).map(peopleById).filter(pp=>pp&&placedIds.has(pp.id));
+      if(par.length){
+        p.x=par.reduce((s,pp)=>s+pp.x,0)/par.length;
+        p.y=Math.max(...par.map(pp=>pp.y))+GEN_H;
+        placedIds.add(p.id);changed=true;return;
+      }
+    });
+  }
+  // Hiçbir ilişkisi olmayan gerçek yetimler — sağ üste diz
   state.people.forEach(p=>{
     if(!placedIds.has(p.id)){
-      p.x=curX;p.y=START_Y;
-      placedIds.add(p.id);
+      p.x=curX;p.y=START_Y;placedIds.add(p.id);
       curX+=SINGLE_W+SIBLING_GAP;
     }
   });
