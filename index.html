@@ -1479,7 +1479,8 @@ function renderAll(){
   svgEl.setAttribute('viewBox',`0 0 ${maxX} ${maxY}`);
   svgEl.setAttribute('width',maxX);svgEl.setAttribute('height',maxY);
   state.people.forEach(renderPerson);
-  state.unions.forEach(renderUnion);
+  let _routeSlot=0;
+  state.unions.forEach(u=>{_routeSlot=renderUnion(u,_routeSlot);});
   renderFamilies();
   if(selectedId){const el=canvasEl.querySelector(`.person[data-id="${selectedId}"]`);if(el)el.classList.add('selected');}
   renderSidebar();
@@ -1508,36 +1509,68 @@ function renderPerson(p){
   canvasEl.appendChild(el);
 }
 
-function renderUnion(u){
+// İki kişi arasında (aynı satırda, yatayda) başka bir düğüm var mı?
+function nodeBetweenUnion(a,b){
+  const lo=Math.min(cx(a),cx(b)),hi=Math.max(cx(a),cx(b));
+  return state.people.some(p=>{
+    if(p.id===a.id||p.id===b.id)return false;
+    if(Math.abs(p.y-a.y)>50)return false;        // kabaca aynı satır
+    const px=cx(p);
+    return px>lo+20&&px<hi-20;                   // gerçekten aralarında
+  });
+}
+// Bir union çizgisinin geometrisi. Ekran (SVG path) ve PNG (Path2D) AYNI 'd'yi kullanır.
+//  - Bitişik / arada düğüm yok → düz çizgi
+//  - Aralarında düğüm olan uzak çift (kuzen evliliği, çok-eşlilikte uzak eş)
+//    → düğümlerin ALTINDAN dolanan, yuvarlatılmış köşeli dik açılı yol.
+//      Dikey parçalar kartların arkasında kalır (SVG kartların altında çizilir).
+//  - Farklı nesil → kübik Bezier
+function unionGeometry(a,b,routeSlot){
+  const ax=cx(a),ay=cy(a),bx=cx(b),by=cy(b);
+  if(a.y===b.y){
+    if(!nodeBetweenUnion(a,b)){
+      let x1=ax,x2=bx;if(x1>x2)[x1,x2]=[x2,x1];
+      return {d:`M ${x1} ${ay} L ${x2} ${ay}`,mx:(x1+x2)/2,my:ay,routed:false};
+    }
+    const yr=ay+122+((routeSlot||0)%4)*16;       // satır altında, hafif kademeli
+    const dir=bx>ax?1:-1;
+    const r=Math.max(0,Math.min(15,Math.abs(bx-ax)/2-2));
+    const d=`M ${ax} ${ay} L ${ax} ${yr-r} Q ${ax} ${yr} ${ax+dir*r} ${yr}`
+           +` L ${bx-dir*r} ${yr} Q ${bx} ${yr} ${bx} ${yr-r} L ${bx} ${by}`;
+    return {d,mx:(ax+bx)/2,my:yr,routed:true};
+  }
+  const midY=(ay+by)/2;
+  return {d:`M ${ax} ${ay} C ${ax} ${midY} ${bx} ${midY} ${bx} ${by}`,mx:(ax+bx)/2,my:midY,routed:false};
+}
+
+// routeSlot: o ana kadar çizilmiş "dolanan" çizgi sayısı (kademeleme için). Yeni değeri döner.
+function renderUnion(u,routeSlot){
   const a=peopleById(u.a),b=peopleById(u.b);
-  if(!a||!b)return;
-  let x1=cx(a),x2=cx(b);if(x1>x2)[x1,x2]=[x2,x1];
-  const yMid=(cy(a)+cy(b))/2;
+  if(!a||!b)return routeSlot||0;
   let style={stroke:'#fff',width:3};let symbol='💍',symClass='';
   if(u.type==='divorced'){style.stroke='#ff8c42';style.dash='8 5';symbol='💔';}
   else if(u.type==='partner'){style.stroke='#5fd6ff';style.dash='2 5';symbol='◇';symClass='partner';}
   else if(u.type==='samesex'){style.stroke='#f4d03f';style.dash='5 4';symbol='⚭';symClass='samesex';}
   else if(u.type==='custom'){style.stroke='#b577da';style.dash='6 3';symbol='✦';symClass='custom';}
-  let d;
-  if(a.y===b.y)d=`M ${x1} ${yMid} L ${x2} ${yMid}`;
-  else d=`M ${cx(a)} ${cy(a)} C ${cx(a)} ${(cy(a)+cy(b))/2}, ${cx(b)} ${(cy(a)+cy(b))/2}, ${cx(b)} ${cy(b)}`;
-  const path=makePath(d,style);
+  const geo=unionGeometry(a,b,routeSlot);
+  const path=makePath(geo.d,style);
   path.dataset.persons=`${u.a},${u.b}`;
   if(u.type!=='divorced'){
     const m=document.createElement('div');m.className='union-marker '+symClass;
-    m.style.left=((x1+x2)/2)+'px';m.style.top=yMid+'px';
+    m.style.left=geo.mx+'px';m.style.top=geo.my+'px';
     m.dataset.persons=`${u.a},${u.b}`;m.textContent=symbol;
     if(u.type==='custom'&&u.customLabel)m.title=u.customLabel;
     canvasEl.appendChild(m);
   }
   if(u.type==='custom'&&u.customLabel){
     const t=document.createElementNS(SVG_NS,'text');
-    t.setAttribute('x',(x1+x2)/2);t.setAttribute('y',yMid-14);
+    t.setAttribute('x',geo.mx);t.setAttribute('y',geo.my-14);
     t.setAttribute('text-anchor','middle');t.setAttribute('fill','#b577da');
     t.setAttribute('font-size','10');t.setAttribute('font-weight','bold');
     t.dataset.persons=`${u.a},${u.b}`;t.textContent=u.customLabel;
     svgEl.appendChild(t);
   }
+  return (routeSlot||0)+(geo.routed?1:0);
 }
 
 function renderFamilies(){
@@ -1549,17 +1582,25 @@ function renderFamilies(){
   });
   let bi=0;
   Object.values(g).forEach(grp=>{
+    const kids=grp.children.map(c=>({...c,person:peopleById(c.id)})).filter(x=>x.person);
+    if(!kids.length)return;
     let oX,oY;
     if(grp.parents.length===2){
       const p1=peopleById(grp.parents[0]),p2=peopleById(grp.parents[1]);
       if(!p1||!p2)return;
-      oX=(cx(p1)+cx(p2))/2;oY=(cy(p1)+cy(p2))/2;
+      if(Math.abs(cx(p1)-cx(p2))>320){
+        // Uzak çift (kuzen evliliği vb.) — iniş, çocuklara yakın ebeveynden başlasın
+        // (yoksa uzaktaki orta noktadan uzun, çapraz, düğümleri kesen bir çizgi olurdu)
+        const kidsCX=kids.reduce((s,c)=>s+cx(c.person),0)/kids.length;
+        const near=Math.abs(cx(p1)-kidsCX)<=Math.abs(cx(p2)-kidsCX)?p1:p2;
+        oX=cx(near);oY=cy(near);
+      }else{
+        oX=(cx(p1)+cx(p2))/2;oY=(cy(p1)+cy(p2))/2;
+      }
     }else if(grp.parents.length===1){
       const p1=peopleById(grp.parents[0]);if(!p1)return;
       oX=cx(p1);oY=cb(p1);
     }else return;
-    const kids=grp.children.map(c=>({...c,person:peopleById(c.id)})).filter(x=>x.person);
-    if(!kids.length)return;
     const childY=Math.min(...kids.map(c=>c.person.y));
     const off=(bi%6)*10;bi++;
     let busY=childY-36-off;
@@ -2623,17 +2664,23 @@ async function exportAsPng(){
   });
   let bi=0;
   Object.values(grp).forEach(g=>{
+    const kids=g.children.map(c=>({...c,person:peopleById(c.id)})).filter(x=>x.person);
+    if(!kids.length)return;
     let oX,oY;
     if(g.parents.length===2){
       const p1=peopleById(g.parents[0]),p2=peopleById(g.parents[1]);
       if(!p1||!p2)return;
-      oX=(cx(p1)+cx(p2))/2;oY=(cy(p1)+cy(p2))/2;
+      if(Math.abs(cx(p1)-cx(p2))>320){
+        const kidsCX=kids.reduce((s,c)=>s+cx(c.person),0)/kids.length;
+        const near=Math.abs(cx(p1)-kidsCX)<=Math.abs(cx(p2)-kidsCX)?p1:p2;
+        oX=cx(near);oY=cy(near);
+      }else{
+        oX=(cx(p1)+cx(p2))/2;oY=(cy(p1)+cy(p2))/2;
+      }
     }else{
       const p1=peopleById(g.parents[0]);if(!p1)return;
       oX=cx(p1);oY=cb(p1);
     }
-    const kids=g.children.map(c=>({...c,person:peopleById(c.id)})).filter(x=>x.person);
-    if(!kids.length)return;
     const childY=Math.min(...kids.map(c=>c.person.y));
     const off=(bi%6)*10;bi++;
     let busY=childY-36-off;if(busY<=oY+20)busY=oY+30+off;
@@ -2648,23 +2695,17 @@ async function exportAsPng(){
     });
   });
   ctx.setLineDash([]);
-  // Draw union lines — ekrandaki renderUnion ile BİREBİR aynı geometri
-  // Aynı y: düz yatay çizgi. Farklı y: kübik Bezier eğri (ortalama-y horizontal DEĞİL).
+  // Draw union lines — ekrandaki renderUnion ile AYNI unionGeometry() → Path2D
+  // (aynı 'd' string'i; düz / dolanan / Bezier hepsi birebir aynı render edilir)
+  let _rs=0;
   state.unions.forEach(u=>{
     const a=peopleById(u.a),b=peopleById(u.b);if(!a||!b)return;
     ctx.strokeStyle=u.type==='divorced'?'#ff8c42':(u.type==='partner'?'#5fd6ff':(u.type==='samesex'?'#f4d03f':(u.type==='custom'?'#b577da':'#fff')));
     ctx.lineWidth=3;
     ctx.setLineDash(u.type==='divorced'?[8,5]:(u.type==='partner'?[2,5]:(u.type==='samesex'?[5,4]:(u.type==='custom'?[6,3]:[]))));
-    ctx.beginPath();
-    if(a.y===b.y){
-      let x1=cx(a),x2=cx(b);if(x1>x2)[x1,x2]=[x2,x1];
-      ctx.moveTo(x1,cy(a));ctx.lineTo(x2,cy(a));
-    }else{
-      const midY=(cy(a)+cy(b))/2;
-      ctx.moveTo(cx(a),cy(a));
-      ctx.bezierCurveTo(cx(a),midY,cx(b),midY,cx(b),cy(b));
-    }
-    ctx.stroke();
+    const geo=unionGeometry(a,b,_rs);
+    ctx.stroke(new Path2D(geo.d));
+    if(geo.routed)_rs++;
   });
   ctx.setLineDash([]);
   // Draw persons
