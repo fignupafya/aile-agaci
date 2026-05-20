@@ -248,9 +248,11 @@ body.sidebar-collapsed .sidebar-toggle{right:0}
 @media (max-width:768px){
   .desktop-only{display:none!important}
   .mobile-only{display:inline-flex!important}
-  /* Mobil header: daha sıkı düzen */
-  header{flex-wrap:nowrap;overflow-x:auto}
-  .toolbar{flex-wrap:nowrap;gap:4px}
+  /* Mobil header: daha sıkı düzen.
+     overflow KULLANILMIYOR — overflow-x:auto, overflow-y'yi de auto'ya çevirip
+     header'ı dikey clip container yapar, arama dropdown'ını kırpardı. */
+  header{flex-wrap:nowrap}
+  .toolbar{flex-wrap:nowrap;gap:4px;flex-shrink:0}
   .brand{font-size:14px;flex-shrink:0}
   .search-wrap{flex:1;min-width:100px;max-width:none;margin:0 4px}
 }
