@@ -318,36 +318,38 @@ body.sidebar-collapsed .sidebar-toggle{right:0}
 @keyframes pickGlow{0%,100%{box-shadow:0 6px 24px rgba(0,0,0,.5)}50%{box-shadow:0 4px 30px rgba(255,224,102,.85)}}
 body.pick-mode .canvas-wrap{cursor:crosshair}
 
-/* Örnek aile bilgi banner'ı — sadece gerçek ilk ziyarette gösterilir */
+/* Örnek aile bilgi kartı — sadece gerçek ilk ziyarette gösterilir */
 .example-banner{
   position:absolute;
   top:14px;left:50%;
   transform:translateX(-50%);
   background:linear-gradient(135deg,#4a7fc7,#3a64a0);
   color:#fff;
-  padding:9px 9px 9px 15px;
-  border-radius:13px;
-  display:flex;align-items:center;gap:11px;
+  padding:14px 16px;
+  border-radius:14px;
   z-index:95;
-  box-shadow:0 8px 28px rgba(0,0,0,.55);
+  box-shadow:0 10px 32px rgba(0,0,0,.55);
   border:1px solid rgba(255,255,255,.22);
-  max-width:min(560px,92vw);
-  font-size:13px;line-height:1.4;
+  width:380px;max-width:92vw;
+  font-size:13px;line-height:1.5;
   animation:bannerIn .4s ease-out;
 }
 @keyframes bannerIn{from{opacity:0;transform:translateX(-50%) translateY(-14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.example-banner .eb-text{flex:1;min-width:0}
-.example-banner .btn{flex-shrink:0}
+.eb-header{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-bottom:8px;padding-right:30px}
+.eb-text{margin-bottom:13px;color:rgba(255,255,255,.93)}
+.eb-text b{color:#fff}
+.eb-actions{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
 .eb-close{
-  flex-shrink:0;
-  background:rgba(0,0,0,.32);
-  border:none;color:#fff;
-  width:28px;height:28px;
-  border-radius:50%;
+  position:absolute;top:10px;right:10px;
+  background:rgba(0,0,0,.32);border:none;color:#fff;
+  width:27px;height:27px;border-radius:50%;
   cursor:pointer;font-size:13px;
   display:flex;align-items:center;justify-content:center;
 }
 .eb-close:hover,.eb-close:active{background:rgba(0,0,0,.6)}
+.eb-lang-toggle{display:flex;background:rgba(0,0,0,.28);border-radius:14px;padding:2px}
+.eb-lang-btn{background:transparent;border:none;color:rgba(255,255,255,.72);padding:6px 12px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;min-height:32px}
+.eb-lang-btn.active{background:#fff;color:#3a64a0}
 body.pick-mode .person:not(.pick-self){filter:brightness(1.15) saturate(1.2)}
 body.pick-mode .person:not(.pick-self):hover .avatar,
 body.pick-mode .person:not(.pick-self) .avatar{outline:3px solid #ffe066;outline-offset:3px}
@@ -470,12 +472,18 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
         <canvas id="minimapCanvas" width="180" height="120"></canvas>
         <div class="minimap-viewport" id="minimapViewport"></div>
       </div>
-      <!-- Örnek aile banner'ı — sadece gerçek ilk ziyarette gösterilir -->
+      <!-- Örnek aile bilgi kartı — sadece gerçek ilk ziyarette gösterilir -->
       <div id="exampleBanner" class="example-banner" style="display:none">
-        <span style="font-size:18px">📋</span>
-        <span class="eb-text" data-i18n="exampleBannerText">Yüklü olan ağaç bir <b>örnek ailedir</b> — uygulamayı keşfetmen için.</span>
-        <button id="exampleBannerStart" class="btn primary" data-i18n="exampleBannerStart">Başla →</button>
         <button id="exampleBannerClose" class="eb-close" data-i18n-title="exampleBannerCloseTitle" title="Kapat">✕</button>
+        <div class="eb-header"><span style="font-size:18px">📋</span><span data-i18n="exampleBannerTitle">Örnek Aile</span></div>
+        <div class="eb-text" data-i18n="exampleBannerText">Yüklü olan ağaç bir <b>örnek ailedir</b> — uygulamayı keşfetmen için. "Başla" ile nasıl kullanılacağını öğren.</div>
+        <div class="eb-actions">
+          <div class="eb-lang-toggle">
+            <button class="eb-lang-btn" data-lang="tr">Türkçe</button>
+            <button class="eb-lang-btn" data-lang="en">English</button>
+          </div>
+          <button id="exampleBannerStart" class="btn primary" data-i18n="exampleBannerStart">Başla →</button>
+        </div>
       </div>
     </div>
     <button class="sidebar-toggle" id="sidebarToggle" title="Paneli aç/kapa">‹</button>
@@ -672,6 +680,7 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
       <li data-i18n="welcomeStep4">Kişiye <b>sağ tıkla</b> (mobilde uzun bas) → düzenle, sil, odakla.</li>
       <li data-i18n="welcomeStep5">Kendi ağacını kurmak için sağ üstteki <b>🗑</b> ile sıfırla.</li>
     </ul>
+    <div style="margin-top:12px;padding:10px 12px;background:rgba(95,168,245,.13);border:1px solid rgba(95,168,245,.3);border-radius:8px;font-size:12px;color:#aed6f1" data-i18n="welcomeReloadNote">💡 Örnek aileyi dilediğin zaman 📋 düğmesiyle geri yükleyebilirsin.</div>
     <div class="modal-actions">
       <button class="btn primary" id="welcomeCloseBtn" data-i18n="welcomeGotIt">Anladım, başlayalım 👍</button>
     </div>
@@ -971,9 +980,11 @@ const T={
   welcomeStep4: ['Kişiye <b>sağ tıkla</b> (mobilde uzun bas) → düzenle, sil, odakla.','<b>Right-click</b> a person (long-press on mobile) → edit, delete, focus.'],
   welcomeStep5: ['Kendi ağacını kurmak için sağ üstteki <b>🗑</b> ile sıfırla.','To build your own tree, reset with <b>🗑</b> at the top right.'],
   // Örnek aile banner'ı
-  exampleBannerText: ['Yüklü olan ağaç bir <b>örnek ailedir</b> — uygulamayı keşfetmen için.','The loaded tree is a <b>sample family</b> — here so you can explore the app.'],
+  exampleBannerTitle: ['Örnek Aile','Sample Family'],
+  exampleBannerText: ['Yüklü olan ağaç bir <b>örnek ailedir</b> — uygulamayı keşfetmen için. "Başla" ile nasıl kullanılacağını öğren.','The loaded tree is a <b>sample family</b> — here so you can explore the app. Tap "Get Started" to learn how it works.'],
   exampleBannerStart: ['Başla →','Get Started →'],
   exampleBannerCloseTitle: ['Kapat','Close'],
+  welcomeReloadNote: ['💡 Örnek aileyi dilediğin zaman 📋 düğmesiyle geri yükleyebilirsin.','💡 You can reload the sample family anytime with the 📋 button.'],
   // ===== Stats modal =====
   statsModalTitle: ['📊 İstatistikler','📊 Statistics'],
   statTotalPeople: ['Toplam kişi','Total people'],
@@ -1225,6 +1236,10 @@ function applyTranslations(){
     btn.textContent=currentLang==='tr'?'🌐 TR':'🌐 EN';
     btn.title=currentLang==='tr'?'Switch to English':'Türkçeye geç';
   }
+  // Banner içindeki dil seçici segment kontrolü — aktif dili işaretle
+  document.querySelectorAll('.eb-lang-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.lang===currentLang);
+  });
 }
 currentLang=detectLanguage();
 
@@ -2428,8 +2443,8 @@ document.getElementById('redoBtn').addEventListener('click',redo);
 document.getElementById('clearBtn').addEventListener('click',()=>{
   if(state.people.length>0&&!confirm(t('confirmClearAll')))return;
   pushHistory();
-  state={people:[],unions:[],families:[],nextId:1};selectedId=null;saveState();renderAll();
-  // Ağaç sıfırlandı — artık örnek aile değil, banner'ı gizle
+  state={people:[],unions:[],families:[],nextId:1};selectedId=null;saveState();renderAll();fitToView();
+  // Ağaç sıfırlandı — artık örnek aile değil, kartı gizle
   document.getElementById('exampleBanner').style.display='none';
 });
 document.getElementById('rearrangeBtn').addEventListener('click',autoArrange);
@@ -2537,9 +2552,13 @@ document.getElementById('statsCloseBtn').addEventListener('click',()=>document.g
 document.getElementById('helpBtn').addEventListener('click',()=>document.getElementById('helpModal').classList.add('open'));
 document.getElementById('helpCloseBtn').addEventListener('click',()=>document.getElementById('helpModal').classList.remove('open'));
 
-// Welcome / tutorial modal kapatma
+// Welcome / tutorial modal — "Anladım, başlayalım": örnek aileyi temizle, boş canvas'a geç
 document.getElementById('welcomeCloseBtn').addEventListener('click',()=>{
   document.getElementById('welcomeModal').classList.remove('open');
+  pushHistory(); // Ctrl+Z ile örnek aile geri gelebilir
+  state={people:[],unions:[],families:[],nextId:1};selectedId=null;
+  saveState();renderAll();fitToView();
+  document.getElementById('exampleBanner').style.display='none';
 });
 
 // Örnek aile banner'ı
@@ -2549,6 +2568,12 @@ document.getElementById('exampleBannerClose').addEventListener('click',()=>{
 document.getElementById('exampleBannerStart').addEventListener('click',()=>{
   // "Başla" → nasıl kullanılır tutorial'ı aç (banner yerinde kalır)
   document.getElementById('welcomeModal').classList.add('open');
+});
+// Banner içindeki dil seçici
+document.querySelectorAll('.eb-lang-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    if(b.dataset.lang!==currentLang)setLanguage(b.dataset.lang);
+  });
 });
 
 //=================================================================
@@ -3021,9 +3046,9 @@ retranslateSampleData();
 applyTranslations();
 renderAll();
 updateUndoRedoButtons();
-// Sadece gerçek ilk ziyarette örnek aile banner'ını göster
+// Sadece gerçek ilk ziyarette örnek aile bilgi kartını göster
 if(isFirstVisit){
-  document.getElementById('exampleBanner').style.display='flex';
+  document.getElementById('exampleBanner').style.display='block';
 }
 
 // Mobilde sidebar'ı kapalı başlat (drawer olarak slide-in)
