@@ -292,17 +292,30 @@ body.sidebar-collapsed .sidebar-toggle{right:0}
 /* Pick mode: canvas'tan kişi seçme görseli */
 .pick-hint{
   position:fixed;
-  top:60px;left:50%;
+  top:58px;left:50%;
   transform:translateX(-50%);
   background:#ffe066;color:#000;
-  padding:10px 18px;border-radius:24px;
+  padding:7px 7px 7px 16px;border-radius:24px;
   font-size:13px;font-weight:700;
   z-index:3000;
   box-shadow:0 6px 24px rgba(0,0,0,.5);
-  pointer-events:none;
-  animation:pickPulse 1.4s ease-in-out infinite;
+  pointer-events:none; /* banner clickleri canvas'a geçsin */
+  display:flex;align-items:center;gap:10px;
+  max-width:92vw;
+  animation:pickGlow 1.6s ease-in-out infinite;
 }
-@keyframes pickPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.04)}}
+.pick-hint #pickHintText{flex:1;min-width:0}
+/* Cancel butonu pointer-events:auto — banner none olsa da tıklanabilir */
+.pick-cancel-btn{
+  pointer-events:auto;flex-shrink:0;
+  background:rgba(0,0,0,.82);color:#fff;
+  border:none;border-radius:18px;
+  padding:9px 15px;min-height:34px;
+  font-size:12px;font-weight:700;
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+}
+.pick-cancel-btn:hover,.pick-cancel-btn:active{background:#000}
+@keyframes pickGlow{0%,100%{box-shadow:0 6px 24px rgba(0,0,0,.5)}50%{box-shadow:0 4px 30px rgba(255,224,102,.85)}}
 body.pick-mode .canvas-wrap{cursor:crosshair}
 body.pick-mode .person:not(.pick-self){filter:brightness(1.15) saturate(1.2)}
 body.pick-mode .person:not(.pick-self):hover .avatar,
@@ -756,7 +769,10 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
 </div>
 
 <!-- Pick mode hint (canvas'tan kişi seçilirken) -->
-<div id="pickHint" class="pick-hint" style="display:none"></div>
+<div id="pickHint" class="pick-hint" style="display:none">
+  <span id="pickHintText"></span>
+  <button id="pickCancelBtn" class="pick-cancel-btn" data-i18n="pickCancel">✕ İptal</button>
+</div>
 
 <input type="file" id="importFile" accept=".json" style="display:none">
 
@@ -1029,10 +1045,11 @@ const T={
   connSiblingNamed: ['👫 $1 ve $2 kardeş','👫 $1 and $2 are siblings'],
   connCustomNamed: ['✦ $1 ↔ $2 özel ilişki','✦ $1 ↔ $2 custom relation'],
   // Pick mode
-  pickHintUnion: ['👆 Eş olarak işaretlenecek kişiye dokunun (Esc: iptal)','👆 Tap a person to select as spouse (Esc to cancel)'],
-  pickHintChild: ['👆 Çocuk olarak işaretlenecek kişiye dokunun','👆 Tap the person to set as child'],
-  pickHintParent: ['👆 Ebeveyn olarak işaretlenecek kişiye dokunun','👆 Tap the person to set as parent'],
+  pickHintUnion: ['👆 Eş / partner için bir kişiye dokun','👆 Tap a person to set as spouse'],
+  pickHintChild: ['👆 Çocuk için bir kişiye dokun','👆 Tap a person to set as child'],
+  pickHintParent: ['👆 Ebeveyn için bir kişiye dokun','👆 Tap a person to set as parent'],
   pickFromCanvas: ['👉 Canvas\'tan seç','👉 Pick from canvas'],
+  pickCancel: ['✕ İptal','✕ Cancel'],
   // Export modal
   exportModalTitle: ['⬇ Dışa Aktar','⬇ Export'],
   exportQuestion: ['JSON dosyasına nasıl kaydedilsin?','How should the JSON file be saved?'],
@@ -2857,6 +2874,7 @@ let pickCallback=null;
 let pickExcludeId=null;
 let pickPreviousModal=null;
 const pickHintEl=document.getElementById('pickHint');
+const pickHintTextEl=document.getElementById('pickHintText');
 
 function enterPickMode(excludeId,hintKey,modalToReopen,callback){
   pickExcludeId=excludeId;
@@ -2865,8 +2883,8 @@ function enterPickMode(excludeId,hintKey,modalToReopen,callback){
   // Mevcut modal'ı kapat (canvas'a erişebilmek için)
   if(modalToReopen)modalToReopen.classList.remove('open');
   document.body.classList.add('pick-mode');
-  pickHintEl.textContent=t(hintKey);
-  pickHintEl.style.display='block';
+  pickHintTextEl.textContent=t(hintKey);
+  pickHintEl.style.display='flex';
   // Hariç tutulacak kişiyi işaretle (kullanıcı kendini seçmesin)
   document.querySelectorAll('.person').forEach(el=>{
     if(el.dataset.id===excludeId)el.classList.add('pick-self');
@@ -2880,13 +2898,16 @@ function exitPickMode(){
   pickHintEl.style.display='none';
   document.querySelectorAll('.person.pick-self').forEach(el=>el.classList.remove('pick-self'));
 }
-// Esc ile iptal
+// Pick mode'u iptal et — modal'ı geri aç. Esc tuşu ve ✕ İptal butonu kullanır.
+function cancelPickMode(){
+  if(!pickCallback)return;
+  const prev=pickPreviousModal;
+  exitPickMode();
+  if(prev)prev.classList.add('open');
+}
+document.getElementById('pickCancelBtn').addEventListener('click',cancelPickMode);
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&pickCallback){
-    const prev=pickPreviousModal;
-    exitPickMode();
-    if(prev)prev.classList.add('open');
-  }
+  if(e.key==='Escape'&&pickCallback)cancelPickMode();
 });
 
 // Pick butonları
