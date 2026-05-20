@@ -183,7 +183,7 @@ body.sidebar-collapsed .sidebar-toggle{right:0}
 .form-group textarea{resize:vertical;min-height:60px}
 .form-row{display:flex;gap:10px}
 .form-row .form-group{flex:1}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
 .help-text{font-size:11px;color:#8a91a6;margin-top:4px;line-height:1.4}
 
 /* Photo uploader */
@@ -681,8 +681,10 @@ body.pick-mode .person.pick-self{opacity:.35;filter:grayscale(.5)}
       <li data-i18n="welcomeStep5">Kendi ağacını kurmak için sağ üstteki <b>🗑</b> ile sıfırla.</li>
     </ul>
     <div style="margin-top:12px;padding:10px 12px;background:rgba(95,168,245,.13);border:1px solid rgba(95,168,245,.3);border-radius:8px;font-size:12px;color:#aed6f1" data-i18n="welcomeReloadNote">💡 Örnek aileyi dilediğin zaman 📋 düğmesiyle geri yükleyebilirsin.</div>
-    <div class="modal-actions">
-      <button class="btn primary" id="welcomeCloseBtn" data-i18n="welcomeGotIt">Anladım, başlayalım 👍</button>
+    <p style="text-align:center;font-size:13px;font-weight:600;color:#e6e9f2;margin:16px 0 8px" data-i18n="welcomeChoosePrompt">Hazırsın! Şimdi ne yapmak istersin?</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn primary" id="welcomeExploreBtn" data-i18n="welcomeExplore">📋 Örnek aileyi incele</button>
+      <button class="btn" id="welcomeOwnBtn" data-i18n="welcomeOwn">✏️ Kendim çizeyim</button>
     </div>
   </div>
 </div>
@@ -972,7 +974,9 @@ const T={
   feature6D: ['Her değişiklik anında tarayıcına kaydedilir','Every change is saved to your browser instantly'],
   loadExampleBtn: ['📋 Örnek Aileyi Aç','📋 Load Example'],
   startFromScratchBtn: ['Sıfırdan Başla →','Start From Scratch →'],
-  welcomeGotIt: ['Anladım, başlayalım 👍','Got it, let\'s go 👍'],
+  welcomeExplore: ['📋 Örnek aileyi incele','📋 Explore the sample'],
+  welcomeOwn: ['✏️ Kendim çizeyim','✏️ Build my own'],
+  welcomeChoosePrompt: ['Hazırsın! Şimdi ne yapmak istersin?','You\'re ready! What would you like to do?'],
   welcomeQuickStart: ['🚀 Hızlı Başlangıç','🚀 Quick Start'],
   welcomeStep1: ['Üstteki <b>+ Kişi</b> ile yeni kişi ekle.','Add a new person with <b>+ Person</b> at the top.'],
   welcomeStep2: ['Bir kişiyi <b>başka kişinin üzerine sürükle</b> → aralarında ilişki kurma menüsü açılır.','Drag a person <b>onto another</b> → a relationship menu opens.'],
@@ -2552,13 +2556,19 @@ document.getElementById('statsCloseBtn').addEventListener('click',()=>document.g
 document.getElementById('helpBtn').addEventListener('click',()=>document.getElementById('helpModal').classList.add('open'));
 document.getElementById('helpCloseBtn').addEventListener('click',()=>document.getElementById('helpModal').classList.remove('open'));
 
-// Welcome / tutorial modal — "Anladım, başlayalım": örnek aileyi temizle, boş canvas'a geç
-document.getElementById('welcomeCloseBtn').addEventListener('click',()=>{
+// Welcome / tutorial modal — iki seçenek
+// "Örnek aileyi incele": modalı kapat, örnek aile olduğu gibi kalsın
+document.getElementById('welcomeExploreBtn').addEventListener('click',()=>{
   document.getElementById('welcomeModal').classList.remove('open');
+  document.getElementById('exampleBanner').style.display='none';
+});
+// "Kendim çizeyim": örnek aileyi temizle, boş canvas'a geç
+document.getElementById('welcomeOwnBtn').addEventListener('click',()=>{
+  document.getElementById('welcomeModal').classList.remove('open');
+  document.getElementById('exampleBanner').style.display='none';
   pushHistory(); // Ctrl+Z ile örnek aile geri gelebilir
   state={people:[],unions:[],families:[],nextId:1};selectedId=null;
   saveState();renderAll();fitToView();
-  document.getElementById('exampleBanner').style.display='none';
 });
 
 // Örnek aile banner'ı
