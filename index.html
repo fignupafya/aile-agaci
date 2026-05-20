@@ -2648,14 +2648,23 @@ async function exportAsPng(){
     });
   });
   ctx.setLineDash([]);
-  // Draw union lines
+  // Draw union lines — ekrandaki renderUnion ile BİREBİR aynı geometri
+  // Aynı y: düz yatay çizgi. Farklı y: kübik Bezier eğri (ortalama-y horizontal DEĞİL).
   state.unions.forEach(u=>{
     const a=peopleById(u.a),b=peopleById(u.b);if(!a||!b)return;
-    let x1=cx(a),x2=cx(b);if(x1>x2)[x1,x2]=[x2,x1];
-    const yM=(cy(a)+cy(b))/2;
     ctx.strokeStyle=u.type==='divorced'?'#ff8c42':(u.type==='partner'?'#5fd6ff':(u.type==='samesex'?'#f4d03f':(u.type==='custom'?'#b577da':'#fff')));
-    ctx.lineWidth=3;ctx.setLineDash(u.type==='divorced'?[8,5]:(u.type==='partner'?[2,5]:(u.type==='samesex'?[5,4]:(u.type==='custom'?[6,3]:[]))));
-    ctx.beginPath();ctx.moveTo(x1,yM);ctx.lineTo(x2,yM);ctx.stroke();
+    ctx.lineWidth=3;
+    ctx.setLineDash(u.type==='divorced'?[8,5]:(u.type==='partner'?[2,5]:(u.type==='samesex'?[5,4]:(u.type==='custom'?[6,3]:[]))));
+    ctx.beginPath();
+    if(a.y===b.y){
+      let x1=cx(a),x2=cx(b);if(x1>x2)[x1,x2]=[x2,x1];
+      ctx.moveTo(x1,cy(a));ctx.lineTo(x2,cy(a));
+    }else{
+      const midY=(cy(a)+cy(b))/2;
+      ctx.moveTo(cx(a),cy(a));
+      ctx.bezierCurveTo(cx(a),midY,cx(b),midY,cx(b),cy(b));
+    }
+    ctx.stroke();
   });
   ctx.setLineDash([]);
   // Draw persons
